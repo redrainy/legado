@@ -10,32 +10,41 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import io.legado.app.R
 import io.legado.app.base.BaseActivity
+import io.legado.app.databinding.ActivitySourceLoginBinding
 import io.legado.app.help.http.CookieStore
 import io.legado.app.utils.snackbar
-import kotlinx.android.synthetic.main.activity_source_login.*
 
 
-class SourceLogin : BaseActivity(R.layout.activity_source_login) {
+class SourceLogin : BaseActivity<ActivitySourceLoginBinding>() {
 
     var sourceUrl: String? = null
     var loginUrl: String? = null
+    var userAgent: String? = null
     var checking = false
+
+    override fun getViewBinding(): ActivitySourceLoginBinding {
+        return ActivitySourceLoginBinding.inflate(layoutInflater)
+    }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         sourceUrl = intent.getStringExtra("sourceUrl")
         loginUrl = intent.getStringExtra("loginUrl")
+        userAgent = intent.getStringExtra("userAgent")
         title = getString(R.string.login_source, sourceUrl)
         initWebView()
     }
 
     @SuppressLint("SetJavaScriptEnabled")
     private fun initWebView() {
-        val settings = web_view.settings
+        val settings = binding.webView.settings
         settings.setSupportZoom(true)
         settings.builtInZoomControls = true
         settings.javaScriptEnabled = true
+        userAgent?.let {
+            settings.userAgentString = it
+        }
         val cookieManager = CookieManager.getInstance()
-        web_view.webViewClient = object : WebViewClient() {
+        binding.webView.webViewClient = object : WebViewClient() {
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                 val cookie = cookieManager.getCookie(url)
                 sourceUrl?.let {
@@ -55,7 +64,9 @@ class SourceLogin : BaseActivity(R.layout.activity_source_login) {
                 super.onPageFinished(view, url)
             }
         }
-        web_view.loadUrl(loginUrl)
+        loginUrl?.let {
+            binding.webView.loadUrl(it)
+        }
     }
 
     override fun onCompatCreateOptionsMenu(menu: Menu): Boolean {
@@ -68,8 +79,10 @@ class SourceLogin : BaseActivity(R.layout.activity_source_login) {
             R.id.menu_success -> {
                 if (!checking) {
                     checking = true
-                    title_bar.snackbar(R.string.check_host_cookie)
-                    web_view.loadUrl(sourceUrl)
+                    binding.titleBar.snackbar(R.string.check_host_cookie)
+                    loginUrl?.let {
+                        binding.webView.loadUrl(it)
+                    }
                 }
             }
         }
@@ -78,6 +91,6 @@ class SourceLogin : BaseActivity(R.layout.activity_source_login) {
 
     override fun onDestroy() {
         super.onDestroy()
-        web_view.destroy()
+        binding.webView.destroy()
     }
 }

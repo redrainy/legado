@@ -14,6 +14,9 @@ interface ReplaceRuleDao {
     @Query("SELECT * FROM replace_rules where `group` like :key or name like :key ORDER BY sortOrder ASC")
     fun liveDataSearch(key: String): LiveData<List<ReplaceRule>>
 
+    @Query("SELECT * FROM replace_rules where `group` like :key ORDER BY sortOrder ASC")
+    fun liveDataGroupSearch(key: String): LiveData<List<ReplaceRule>>
+
     @get:Query("SELECT MIN(sortOrder) FROM replace_rules")
     val minOrder: Int
 
@@ -31,15 +34,6 @@ interface ReplaceRuleDao {
 
     @Query("SELECT * FROM replace_rules WHERE id in (:ids)")
     fun findByIds(vararg ids: Long): List<ReplaceRule>
-
-    @Query(
-        """
-        SELECT * FROM replace_rules WHERE isEnabled = 1 
-        AND (scope LIKE '%' || :scope || '%' or scope is null or scope = '')
-        order by sortOrder
-        """
-    )
-    fun findEnabledByScope(scope: String): List<ReplaceRule>
 
     @Query(
         """

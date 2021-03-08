@@ -22,4 +22,6 @@ object EventBus {
     const val SAVE_CONTENT = "saveContent"
     const val CHECK_SOURCE = "checkSource"
     const val CHECK_SOURCE_DONE = "checkSourceDone"
+    const val REPLACE_RULE_SAVE = "replaceRuleSave"
+    const val TIP_COLOR = "tipColor"
 }

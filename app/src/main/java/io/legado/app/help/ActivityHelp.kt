@@ -10,6 +10,7 @@ import java.util.*
 /**
  * Activity管理器,管理项目中Activity的状态
  */
+@Suppress("unused")
 object ActivityHelp : Application.ActivityLifecycleCallbacks {
 
     private val activities: MutableList<WeakReference<Activity>> = arrayListOf()
@@ -103,7 +104,7 @@ object ActivityHelp : Application.ActivityLifecycleCallbacks {
         remove(activity)
     }
 
-    override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle?) {
+    override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {
     }
 
     override fun onActivityStopped(activity: Activity) {

@@ -8,18 +8,23 @@ import io.legado.app.utils.splitNotBlank
 import java.util.*
 import java.util.regex.Pattern
 
+@Suppress("RegExpRedundantEscape")
 @Keep
-class AnalyzeByJSonPath {
-    private var ctx: ReadContext? = null
+class AnalyzeByJSonPath(json: Any) {
 
-    fun parse(json: Any): AnalyzeByJSonPath {
-        ctx = if (json is String) {
-            JsonPath.parse(json)
-        } else {
-            JsonPath.parse(json)
+    companion object {
+        private val jsonRulePattern = Pattern.compile("(?<=\\{)\\$\\..+?(?=\\})")
+
+        fun parse(json: Any): ReadContext {
+            return when (json) {
+                is ReadContext -> json
+                is String -> JsonPath.parse(json)
+                else -> JsonPath.parse(json)
+            }
         }
-        return this
     }
+
+    private var ctx: ReadContext = parse(json)
 
     fun getString(rule: String): String? {
         if (TextUtils.isEmpty(rule)) return null
@@ -35,10 +40,10 @@ class AnalyzeByJSonPath {
         }
         if (rules.size == 1) {
             if (!rule.contains("{$.")) {
-                ctx?.let {
-                    try {
-                        val ob = it.read<Any>(rule)
-                        result = if (ob is List<*>) {
+                try {
+                    val ob = ctx.read<Any>(rule)
+                    result =
+                        if (ob is List<*>) {
                             val builder = StringBuilder()
                             for (o in ob) {
                                 builder.append(o).append("\n")
@@ -47,9 +52,7 @@ class AnalyzeByJSonPath {
                         } else {
                             ob.toString()
                         }
-                    } catch (ignored: Exception) {
-                    }
-
+                } catch (ignored: Exception) {
                 }
                 return result
             } else {
@@ -100,7 +103,7 @@ class AnalyzeByJSonPath {
         if (rules.size == 1) {
             if (!rule.contains("{$.")) {
                 try {
-                    val obj = ctx!!.read<Any>(rule) ?: return result
+                    val obj = ctx.read<Any>(rule) ?: return result
                     if (obj is List<*>) {
                         for (o in obj)
                             result.add(o.toString())
@@ -109,7 +112,6 @@ class AnalyzeByJSonPath {
                     }
                 } catch (ignored: Exception) {
                 }
-
                 return result
             } else {
                 val matcher = jsonRulePattern.matcher(rule)
@@ -152,7 +154,7 @@ class AnalyzeByJSonPath {
     }
 
     internal fun getObject(rule: String): Any {
-        return ctx!!.read(rule)
+        return ctx.read(rule)
     }
 
     internal fun getList(rule: String): ArrayList<Any>? {
@@ -175,7 +177,7 @@ class AnalyzeByJSonPath {
             }
         }
         if (rules.size == 1) {
-            ctx?.let {
+            ctx.let {
                 try {
                     return it.read<ArrayList<Any>>(rules[0])
                 } catch (e: Exception) {
@@ -213,7 +215,4 @@ class AnalyzeByJSonPath {
         return result
     }
 
-    companion object {
-        private val jsonRulePattern = Pattern.compile("(?<=\\{)\\$\\..+?(?=\\})")
-    }
 }

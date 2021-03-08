@@ -1,13 +1,9 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-android-extensions'
+apply plugin: 'kotlin-parcelize'
 apply plugin: 'kotlin-kapt'
 apply plugin: 'de.timfreiheit.resourceplaceholders'
-apply plugin: 'io.fabric'
-
-androidExtensions {
-    experimental = true
-}
+apply plugin: 'com.google.firebase.crashlytics'
 
 static def releaseTime() {
     return new Date().format("yy.MMddHH", TimeZone.getTimeZone("GMT+8"))
@@ -18,7 +14,7 @@ def version = "3." + releaseTime()
 def gitCommits = Integer.parseInt('git rev-list --count HEAD'.execute([], project.rootDir).text.trim())
 
 android {
-    compileSdkVersion 29
+    compileSdkVersion 30
     signingConfigs {
         if (project.hasProperty("RELEASE_STORE_FILE")) {
             myConfig {
@@ -34,7 +30,7 @@ android {
     defaultConfig {
         applicationId "io.legado.app"
         minSdkVersion 21
-        targetSdkVersion 29
+        targetSdkVersion 30
         versionCode gitCommits
         versionName version
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -49,6 +45,9 @@ android {
                 ]
             }
         }
+    }
+    buildFeatures {
+        viewBinding true
     }
     buildTypes {
         release {
@@ -98,6 +97,7 @@ android {
     kotlinOptions {
         jvmTarget = "1.8"
     }
+    buildToolsVersion '30.0.3'
 }
 
 resourcePlaceholders {
@@ -111,9 +111,9 @@ kapt {
 }
 
 dependencies {
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.0.10'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.1'
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    testImplementation 'junit:junit:4.13'
+    testImplementation 'junit:junit:4.13.1'
     androidTestImplementation 'androidx.test:runner:1.3.0'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
     implementation "com.android.support:multidex:1.0.3"
@@ -121,20 +121,34 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
 
     //fireBase
-    implementation 'com.google.firebase:firebase-analytics-ktx:17.6.0'
-    implementation 'com.google.firebase:firebase-crashlytics-ktx:17.2.2'
+    implementation 'com.google.firebase:firebase-analytics-ktx:18.0.0'
+    implementation 'com.google.firebase:firebase-crashlytics-ktx:17.3.0'
 
     //androidX
-    implementation 'androidx.core:core-ktx:1.3.2'
     implementation 'androidx.appcompat:appcompat:1.2.0'
-    implementation 'androidx.media:media:1.2.0'
-    implementation 'androidx.preference:preference:1.1.1'
-    implementation 'androidx.constraintlayout:constraintlayout:2.0.2'
+    implementation 'androidx.core:core-ktx:1.3.2'
+    implementation "androidx.activity:activity-ktx:1.1.0"
+    implementation "androidx.fragment:fragment-ktx:1.2.5"
+    implementation 'androidx.preference:preference-ktx:1.1.1'
+    implementation "androidx.collection:collection-ktx:1.1.0"
+    implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
     implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
     implementation 'androidx.viewpager2:viewpager2:1.0.0'
     implementation 'com.google.android.material:material:1.2.1'
     implementation 'com.google.android:flexbox:1.1.0'
     implementation 'com.google.code.gson:gson:2.8.6'
+
+    //media
+    def media2_version = "1.1.2"
+    implementation "androidx.media2:media2-session:$media2_version"
+    //implementation "androidx.media2:media2-player:$media2_version"
+    //implementation 'com.google.android.exoplayer:exoplayer:2.13.0'
+
+    //Splitties
+    def splitties_version = '2.1.1'
+    implementation("com.louiscad.splitties:splitties-appctx:$splitties_version")
+    implementation("com.louiscad.splitties:splitties-systemservices:$splitties_version")
+    implementation("com.louiscad.splitties:splitties-views:$splitties_version")
 
     //lifecycle
     def lifecycle_version = '2.2.0'
@@ -142,18 +156,13 @@ dependencies {
     implementation "androidx.lifecycle:lifecycle-common-java8:$lifecycle_version"
 
     //room
-    def room_version = '2.2.5'
+    def room_version = '2.2.6'
     implementation "androidx.room:room-runtime:$room_version"
     kapt "androidx.room:room-compiler:$room_version"
-    testImplementation "androidx.room:room-testing:2.2.5"
+    testImplementation "androidx.room:room-testing:$room_version"
 
     //paging
     implementation 'androidx.paging:paging-runtime-ktx:2.1.2'
-
-    //anko
-    def anko_version = '0.10.8'
-    implementation "org.jetbrains.anko:anko-sdk27:$anko_version"
-    implementation "org.jetbrains.anko:anko-sdk27-listeners:$anko_version"
 
     //liveEventBus
     implementation 'com.jeremyliao:live-event-bus-x:1.5.7'
@@ -165,16 +174,17 @@ dependencies {
 
     //规则相关
     implementation 'org.jsoup:jsoup:1.13.1'
+    //noinspection GradleDependency
     implementation 'cn.wanghaomiao:JsoupXpath:2.3.2'
-    implementation 'com.jayway.jsonpath:json-path:2.4.0'
+    implementation 'com.jayway.jsonpath:json-path:2.5.0'
 
     //JS rhino
-    implementation 'com.github.gedoor:rhino-android:1.4'
+    implementation 'com.github.gedoor:rhino-android:1.5'
 
     //网络
-    //noinspection GradleDependency
-    implementation 'com.squareup.retrofit2:retrofit:2.9.0'
-    implementation 'com.github.franmontiel:PersistentCookieJar:v1.0.1'
+    implementation 'com.squareup.okhttp3:okhttp:4.9.0'
+    implementation 'com.ljx.rxhttp:rxhttp:2.5.3'
+    kapt 'com.ljx.rxhttp:rxhttp-compiler:2.5.3'
 
     //Glide
     implementation 'com.github.bumptech.glide:glide:4.11.0'
@@ -184,17 +194,19 @@ dependencies {
     implementation 'org.nanohttpd:nanohttpd-websocket:2.3.1'
 
     //二维码
-    implementation 'cn.bingoogolapple:bga-qrcode-zxing:1.3.7'
+    implementation 'com.king.zxing:zxing-lite:2.0.2'
 
     //颜色选择
     implementation 'com.jaredrummler:colorpicker:1.1.0'
 
     //apache
-    implementation 'org.apache.commons:commons-lang3:3.11'
-    implementation 'org.apache.commons:commons-text:1.8'
+    implementation 'org.apache.commons:commons-text:1.9'
 
     //MarkDown
-    implementation 'ru.noties.markwon:core:3.1.0'
+    implementation 'io.noties.markwon:core:4.6.0'
+    implementation 'io.noties.markwon:image-glide:4.6.0'
+    implementation 'io.noties.markwon:ext-tables:4.6.0'
+    implementation 'io.noties.markwon:html:4.6.0'
 
     //转换繁体
     implementation 'com.hankcs:hanlp:portable-1.7.8'
@@ -205,8 +217,6 @@ dependencies {
         exclude group: 'xmlpull'
     }
 
-    //E-Ink 有些手机会出现重影
-    //implementation 'fadeapp.widgets:scrollless-recyclerView:1.0.2'
 }
 
 apply plugin: 'com.google.gms.google-services'

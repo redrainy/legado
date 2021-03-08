@@ -1,5 +1,6 @@
 package io.legado.app.ui.config
 
+import android.annotation.SuppressLint
 import android.app.Activity.RESULT_OK
 import android.content.ComponentName
 import android.content.Intent
@@ -12,18 +13,16 @@ import android.view.View
 import androidx.documentfile.provider.DocumentFile
 import androidx.preference.ListPreference
 import androidx.preference.Preference
-import io.legado.app.App
 import io.legado.app.R
 import io.legado.app.base.BasePreferenceFragment
 import io.legado.app.constant.EventBus
 import io.legado.app.constant.PreferKey
+import io.legado.app.databinding.DialogEditTextBinding
 import io.legado.app.help.AppConfig
 import io.legado.app.help.BookHelp
 import io.legado.app.help.permission.Permissions
 import io.legado.app.help.permission.PermissionsCompat
 import io.legado.app.lib.dialogs.alert
-import io.legado.app.lib.dialogs.noButton
-import io.legado.app.lib.dialogs.okButton
 import io.legado.app.lib.dialogs.selector
 import io.legado.app.lib.theme.ATH
 import io.legado.app.receiver.SharedReceiverActivity
@@ -32,6 +31,7 @@ import io.legado.app.ui.main.MainActivity
 import io.legado.app.ui.widget.image.CoverImageView
 import io.legado.app.ui.widget.number.NumberPickerDialog
 import io.legado.app.utils.*
+import splitties.init.appCtx
 import java.io.File
 
 
@@ -40,9 +40,9 @@ class OtherConfigFragment : BasePreferenceFragment(),
 
     private val requestCodeCover = 231
 
-    private val packageManager = App.INSTANCE.packageManager
+    private val packageManager = appCtx.packageManager
     private val componentName = ComponentName(
-        App.INSTANCE,
+        appCtx,
         SharedReceiverActivity::class.java.name
     )
     private val webPort get() = getPrefInt(PreferKey.webPort, 1122)
@@ -50,6 +50,7 @@ class OtherConfigFragment : BasePreferenceFragment(),
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         putPrefBoolean(PreferKey.processText, isProcessTextEnabled())
         addPreferencesFromResource(R.xml.pref_config_other)
+        upPreferenceSummary(PreferKey.userAgent, AppConfig.userAgent)
         upPreferenceSummary(PreferKey.threadCount, AppConfig.threadCount.toString())
         upPreferenceSummary(PreferKey.webPort, webPort.toString())
         upPreferenceSummary(PreferKey.defaultCover, getPrefString(PreferKey.defaultCover))
@@ -68,6 +69,7 @@ class OtherConfigFragment : BasePreferenceFragment(),
 
     override fun onPreferenceTreeClick(preference: Preference?): Boolean {
         when (preference?.key) {
+            PreferKey.userAgent -> showUserAgentDialog()
             PreferKey.threadCount -> NumberPickerDialog(requireContext())
                 .setTitle(getString(R.string.threads_num_title))
                 .setMaxValue(999)
@@ -86,13 +88,13 @@ class OtherConfigFragment : BasePreferenceFragment(),
                 }
             PreferKey.cleanCache -> clearCache()
             PreferKey.defaultCover -> if (getPrefString(PreferKey.defaultCover).isNullOrEmpty()) {
-                selectDefaultCover()
+                selectImage(requestCodeCover)
             } else {
                 selector(items = arrayListOf("删除图片", "选择图片")) { _, i ->
                     if (i == 0) {
                         removePref(PreferKey.defaultCover)
                     } else {
-                        selectDefaultCover()
+                        selectImage(requestCodeCover)
                     }
                 }
             }
@@ -119,18 +121,18 @@ class OtherConfigFragment : BasePreferenceFragment(),
             }
             PreferKey.showRss -> postEvent(EventBus.SHOW_RSS, "")
             PreferKey.defaultCover -> upPreferenceSummary(
-                key,
-                getPrefString(PreferKey.defaultCover)
+                key, getPrefString(PreferKey.defaultCover)
             )
-            PreferKey.replaceEnableDefault -> AppConfig.replaceEnableDefault =
-                App.INSTANCE.getPrefBoolean(PreferKey.replaceEnableDefault, true)
             PreferKey.language -> listView.postDelayed({
-                LanguageUtils.setConfiguration(App.INSTANCE)
-                val intent = Intent(App.INSTANCE, MainActivity::class.java)
+                LanguageUtils.setConfiguration(appCtx)
+                val intent = Intent(appCtx, MainActivity::class.java)
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                App.INSTANCE.startActivity(intent)
+                appCtx.startActivity(intent)
                 Process.killProcess(Process.myPid())
             }, 1000)
+            PreferKey.userAgent -> listView.post {
+                upPreferenceSummary(PreferKey.userAgent, AppConfig.userAgent)
+            }
         }
     }
 
@@ -149,23 +151,44 @@ class OtherConfigFragment : BasePreferenceFragment(),
         }
     }
 
+    @SuppressLint("InflateParams")
+    private fun showUserAgentDialog() {
+        alert("UserAgent") {
+            val alertBinding = DialogEditTextBinding.inflate(layoutInflater)
+            alertBinding.editView.setText(AppConfig.userAgent)
+            customView { alertBinding.root }
+            okButton {
+                val userAgent = alertBinding.editView.text?.toString()
+                if (userAgent.isNullOrBlank()) {
+                    removePref(PreferKey.userAgent)
+                } else {
+                    putPrefString(PreferKey.userAgent, userAgent)
+                }
+            }
+            noButton()
+        }.show()
+    }
+
     private fun clearCache() {
-        requireContext().alert(titleResource = R.string.clear_cache,
-            messageResource = R.string.sure_del) {
+        requireContext().alert(
+            titleResource = R.string.clear_cache,
+            messageResource = R.string.sure_del
+        ) {
             okButton {
                 BookHelp.clearCache()
                 FileUtils.deleteFile(requireActivity().cacheDir.absolutePath)
-                toast(R.string.clear_cache_success)
+                toastOnUi(R.string.clear_cache_success)
             }
             noButton()
-        }.show().applyTint()
+        }.show()
     }
 
-    private fun selectDefaultCover() {
+    @Suppress("SameParameterValue")
+    private fun selectImage(requestCode: Int) {
         val intent = Intent(Intent.ACTION_GET_CONTENT)
         intent.addCategory(Intent.CATEGORY_OPENABLE)
         intent.type = "image/*"
-        startActivityForResult(intent, requestCodeCover)
+        startActivityForResult(intent, requestCode)
     }
 
     private fun isProcessTextEnabled(): Boolean {
@@ -187,7 +210,7 @@ class OtherConfigFragment : BasePreferenceFragment(),
     }
 
     private fun setCoverFromUri(uri: Uri) {
-        if (uri.toString().isContentPath()) {
+        if (uri.isContentScheme()) {
             val doc = DocumentFile.fromSingleUri(requireContext(), uri)
             doc?.name?.let {
                 var file = requireContext().externalFilesDir
@@ -198,7 +221,7 @@ class OtherConfigFragment : BasePreferenceFragment(),
                     file.writeBytes(byteArray)
                     putPrefString(PreferKey.defaultCover, file.absolutePath)
                     CoverImageView.upDefaultCover()
-                } ?: toast("获取文件出错")
+                } ?: toastOnUi("获取文件出错")
             }
         } else {
             PermissionsCompat.Builder(this)

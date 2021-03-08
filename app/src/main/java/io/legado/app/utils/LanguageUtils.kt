@@ -19,7 +19,6 @@ object LanguageUtils {
             val resources: Resources = context.resources
             val metrics = resources.displayMetrics
             val configuration: Configuration = resources.configuration
-            //Log.d("h11128", "set language to ${context.getPrefString(PreferKey.language)}")
             val targetLocale = getSetLocale(context)
             configuration.setLocale(targetLocale)
             configuration.setLocales(LocaleList(targetLocale))
@@ -72,14 +71,6 @@ object LanguageUtils {
             @Suppress("DEPRECATION")
             locale = context.resources.configuration.locale
         }
-        /*
-        Log.d("h11128", "displayName " + locale.displayName)
-        Log.d("h11128", "displayCountry " + locale.displayCountry)
-        Log.d("h11128", "displayLanguage " + locale.displayLanguage)
-        Log.d("h11128", "Language " + locale.language)
-        Log.d("h11128", "Country " + locale.country)
-
-         */
         return locale
 
     }

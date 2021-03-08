@@ -7,7 +7,9 @@
         android:name="android.permission.MANAGE_DOCUMENTS"
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        tools:ignore="ScopedStorage" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
@@ -148,7 +150,15 @@
         <activity
             android:name=".ui.book.read.ReadBookActivity"
             android:configChanges="locale|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout"
-            android:launchMode="singleTask" />
+            android:launchMode="singleTask">
+            <intent-filter>
+                <action android:name="com.samsung.android.support.REMOTE_ACTION" />
+            </intent-filter>
+
+            <meta-data
+                android:name="com.samsung.android.support.REMOTE_ACTION"
+                android:resource="@xml/spen_remote_actions" />
+        </activity>
         <!-- 书籍详情页 -->
         <activity
             android:name=".ui.book.info.BookInfoActivity"
@@ -169,6 +179,10 @@
         <activity
             android:name=".ui.qrcode.QrCodeActivity"
             android:launchMode="singleTask" />
+        <!-- 规则订阅 -->
+        <activity
+            android:name=".ui.rss.subscription.RuleSubActivity"
+            android:launchMode="singleTask" />
         <!-- 书源编辑 -->
         <activity
             android:name=".ui.book.source.edit.BookSourceEditActivity"
@@ -181,6 +195,12 @@
             android:configChanges="locale|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout"
             android:launchMode="singleTask"
             android:windowSoftInputMode="adjustResize|stateHidden" />
+        <!-- 书源编辑 -->
+        <activity
+            android:name=".ui.replace.edit.ReplaceEditActivity"
+            android:configChanges="locale|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout"
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize|stateHidden" />
         <!-- 配置界面 -->
         <activity
             android:name=".ui.config.ConfigActivity"
@@ -188,41 +208,48 @@
         <!-- 搜索界面 -->
         <activity
             android:name=".ui.book.search.SearchActivity"
-            android:launchMode="singleTask" />
+            android:launchMode="standard" />
         <!-- 关于界面 -->
         <activity
             android:name=".ui.about.AboutActivity"
-            android:launchMode="singleTask" />
+            android:launchMode="singleTask"
+            android:screenOrientation="behind" />
         <!-- 捐赠界面 -->
         <activity
             android:name=".ui.about.DonateActivity"
-            android:launchMode="singleTask" />
+            android:launchMode="singleTask"
+            android:screenOrientation="behind" />
         <!-- 书源管理 -->
         <activity
             android:name=".ui.book.source.manage.BookSourceActivity"
-            android:launchMode="singleTop" />
+            android:launchMode="singleTop"
+            android:screenOrientation="behind" />
         <!-- 订阅源管理 -->
         <activity
             android:name=".ui.rss.source.manage.RssSourceActivity"
-            android:launchMode="singleTop" />
+            android:launchMode="singleTop"
+            android:screenOrientation="behind" />
         <!-- 替换规则界面 -->
         <activity
-            android:name=".ui.replacerule.ReplaceRuleActivity"
-            android:launchMode="singleTop">
-        </activity>
+            android:name=".ui.replace.ReplaceRuleActivity"
+            android:launchMode="singleTop"
+            android:screenOrientation="behind" />
         <!-- 书籍管理 -->
         <activity
             android:name=".ui.book.arrange.ArrangeBookActivity"
-            android:launchMode="singleTop" />
+            android:launchMode="singleTop"
+            android:screenOrientation="behind" />
         <!-- 书源调试 -->
         <activity
             android:name=".ui.book.source.debug.BookSourceDebugActivity"
-            android:launchMode="singleTop" />
-        <!-- 目录 -->
-        <activity
-            android:name=".ui.book.chapterlist.ChapterListActivity"
             android:launchMode="singleTop"
             android:screenOrientation="behind" />
+        <!-- 目录 -->
+        <activity
+            android:name=".ui.book.toc.ChapterListActivity"
+            android:launchMode="singleTop"
+            android:screenOrientation="behind" />
+        <!-- 正文搜索 -->
         <activity
             android:name=".ui.book.searchContent.SearchContentActivity"
             android:launchMode="singleTop"
@@ -270,7 +297,8 @@
         <!-- 文字处理 -->
         <activity
             android:name=".receiver.SharedReceiverActivity"
-            android:label="@string/receiving_shared_label">
+            android:label="@string/receiving_shared_label"
+            android:theme="@style/AppTheme.Transparent">
             <intent-filter>
                 <action android:name="android.intent.action.PROCESS_TEXT" />
 
@@ -337,8 +365,8 @@
         <!-- 打开文件 -->
         <activity
             android:name=".ui.association.FileAssociationActivity"
-            android:theme="@style/AppTheme.Transparent"
-            android:launchMode="singleTop">
+            android:launchMode="singleTop"
+            android:theme="@style/AppTheme.Transparent">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
@@ -365,6 +393,7 @@
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
             </intent-filter>
         </receiver>
+
         <provider
             android:name=".api.ReaderProvider"
             android:authorities="${applicationId}.readerProvider"
@@ -385,5 +414,15 @@
             android:name="channel"
             android:value="${APP_CHANNEL_VALUE}" />
     </application>
+
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT" />
+            <data android:mimeType="text/plain" />
+        </intent>
+    </queries>
 
 </manifest>

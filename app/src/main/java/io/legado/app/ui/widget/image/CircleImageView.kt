@@ -24,11 +24,11 @@ import io.legado.app.utils.sp
 import kotlin.math.min
 import kotlin.math.pow
 
-class CircleImageView(context: Context, attrs: AttributeSet) :
-    AppCompatImageView(
-        context,
-        attrs
-    ) {
+@Suppress("unused", "MemberVisibilityCanBePrivate")
+class CircleImageView @JvmOverloads constructor(
+    context: Context,
+    attrs: AttributeSet? = null
+) : AppCompatImageView(context, attrs) {
 
     private val mDrawableRect = RectF()
     private val mBorderRect = RectF()
@@ -122,7 +122,6 @@ class CircleImageView(context: Context, attrs: AttributeSet) :
     var isInView = false
 
     init {
-        super.setScaleType(SCALE_TYPE)
         val a = context.obtainStyledAttributes(attrs, R.styleable.CircleImageView)
         mBorderWidth =
             a.getDimensionPixelSize(
@@ -139,6 +138,7 @@ class CircleImageView(context: Context, attrs: AttributeSet) :
                 DEFAULT_CIRCLE_BACKGROUND_COLOR
             )
         text = a.getString(R.styleable.CircleImageView_text)
+        contentDescription = text
         if (a.hasValue(R.styleable.CircleImageView_textColor)) {
             textColor = a.getColor(
                 R.styleable.CircleImageView_textColor,
@@ -156,16 +156,6 @@ class CircleImageView(context: Context, attrs: AttributeSet) :
         if (mSetupPending) {
             setup()
             mSetupPending = false
-        }
-    }
-
-    override fun getScaleType(): ScaleType {
-        return SCALE_TYPE
-    }
-
-    override fun setScaleType(scaleType: ScaleType) {
-        if (scaleType != SCALE_TYPE) {
-            throw IllegalArgumentException(String.format("ScaleType %s not supported.", scaleType))
         }
     }
 
@@ -226,6 +216,7 @@ class CircleImageView(context: Context, attrs: AttributeSet) :
 
     fun setText(text: String?) {
         this.text = text
+        contentDescription = text
         invalidate()
     }
 
@@ -454,7 +445,6 @@ class CircleImageView(context: Context, attrs: AttributeSet) :
     }
 
     companion object {
-        private val SCALE_TYPE = ScaleType.CENTER_CROP
         private val BITMAP_CONFIG = Bitmap.Config.ARGB_8888
         private const val COLOR_DRAWABLE_DIMENSION = 2
         private const val DEFAULT_BORDER_WIDTH = 0

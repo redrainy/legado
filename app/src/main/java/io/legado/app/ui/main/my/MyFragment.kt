@@ -7,13 +7,14 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import androidx.preference.Preference
-import io.legado.app.App
 import io.legado.app.R
 import io.legado.app.base.BaseFragment
 import io.legado.app.base.BasePreferenceFragment
 import io.legado.app.constant.EventBus
 import io.legado.app.constant.PreferKey
+import io.legado.app.databinding.FragmentMyConfigBinding
 import io.legado.app.help.AppConfig
+import io.legado.app.help.ThemeConfig
 import io.legado.app.lib.theme.ATH
 import io.legado.app.service.WebService
 import io.legado.app.ui.about.AboutActivity
@@ -23,23 +24,21 @@ import io.legado.app.ui.book.source.manage.BookSourceActivity
 import io.legado.app.ui.config.BackupRestoreUi
 import io.legado.app.ui.config.ConfigActivity
 import io.legado.app.ui.config.ConfigViewModel
-import io.legado.app.ui.filechooser.FileChooserDialog
-import io.legado.app.ui.replacerule.ReplaceRuleActivity
+import io.legado.app.ui.filepicker.FilePickerDialog
+import io.legado.app.ui.replace.ReplaceRuleActivity
 import io.legado.app.ui.widget.dialog.TextDialog
 import io.legado.app.ui.widget.prefs.NameListPreference
 import io.legado.app.ui.widget.prefs.PreferenceCategory
 import io.legado.app.ui.widget.prefs.SwitchPreference
-import io.legado.app.utils.LogUtils
-import io.legado.app.utils.getPrefBoolean
-import io.legado.app.utils.observeEventSticky
-import io.legado.app.utils.putPrefBoolean
-import kotlinx.android.synthetic.main.view_title_bar.*
-import org.jetbrains.anko.startActivity
+import io.legado.app.utils.*
+import io.legado.app.utils.viewbindingdelegate.viewBinding
 
-class MyFragment : BaseFragment(R.layout.fragment_my_config), FileChooserDialog.CallBack {
+class MyFragment : BaseFragment(R.layout.fragment_my_config), FilePickerDialog.CallBack {
+
+    private val binding by viewBinding(FragmentMyConfigBinding::bind)
 
     override fun onFragmentCreated(view: View, savedInstanceState: Bundle?) {
-        setSupportToolbar(toolbar)
+        setSupportToolbar(binding.titleBar.toolbar)
         val fragmentTag = "prefFragment"
         var preferenceFragment = childFragmentManager.findFragmentByTag(fragmentTag)
         if (preferenceFragment == null) preferenceFragment = PreferenceFragment()
@@ -54,14 +53,10 @@ class MyFragment : BaseFragment(R.layout.fragment_my_config), FileChooserDialog.
     override fun onCompatOptionsItemSelected(item: MenuItem) {
         when (item.itemId) {
             R.id.menu_help -> {
-                val text = String(requireContext().assets.open("help.md").readBytes())
+                val text = String(requireContext().assets.open("help/appHelp.md").readBytes())
                 TextDialog.show(childFragmentManager, text, TextDialog.MD)
             }
         }
-    }
-
-    override fun onFilePicked(requestCode: Int, currentPath: String) {
-        BackupRestoreUi.onFilePicked(requestCode, currentPath)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -95,13 +90,13 @@ class MyFragment : BaseFragment(R.layout.fragment_my_config), FileChooserDialog.
             }
             findPreference<NameListPreference>(PreferKey.themeMode)?.let {
                 it.setOnPreferenceChangeListener { _, _ ->
-                    view?.post { App.INSTANCE.applyDayNight() }
+                    view?.post { ThemeConfig.applyDayNight(requireContext()) }
                     true
                 }
             }
             if (AppConfig.isGooglePlay) {
                 findPreference<PreferenceCategory>("aboutCategory")
-                    ?.removePreference(findPreference("donate"))
+                    ?.removePreferenceRecursively("donate")
             }
         }
 
@@ -138,20 +133,20 @@ class MyFragment : BaseFragment(R.layout.fragment_my_config), FileChooserDialog.
 
         override fun onPreferenceTreeClick(preference: Preference?): Boolean {
             when (preference?.key) {
-                "bookSourceManage" -> context?.startActivity<BookSourceActivity>()
-                "replaceManage" -> context?.startActivity<ReplaceRuleActivity>()
-                "setting" -> context?.startActivity<ConfigActivity>(
-                    Pair("configType", ConfigViewModel.TYPE_CONFIG)
-                )
-                "web_dav_setting" -> context?.startActivity<ConfigActivity>(
-                    Pair("configType", ConfigViewModel.TYPE_WEB_DAV_CONFIG)
-                )
-                "theme_setting" -> context?.startActivity<ConfigActivity>(
-                    Pair("configType", ConfigViewModel.TYPE_THEME_CONFIG)
-                )
-                "readRecord" -> context?.startActivity<ReadRecordActivity>()
-                "donate" -> context?.startActivity<DonateActivity>()
-                "about" -> context?.startActivity<AboutActivity>()
+                "bookSourceManage" -> startActivity<BookSourceActivity>()
+                "replaceManage" -> startActivity<ReplaceRuleActivity>()
+                "setting" -> startActivity<ConfigActivity> {
+                    putExtra("configType", ConfigViewModel.TYPE_CONFIG)
+                }
+                "web_dav_setting" -> startActivity<ConfigActivity> {
+                    putExtra("configType", ConfigViewModel.TYPE_WEB_DAV_CONFIG)
+                }
+                "theme_setting" -> startActivity<ConfigActivity> {
+                    putExtra("configType", ConfigViewModel.TYPE_THEME_CONFIG)
+                }
+                "readRecord" -> startActivity<ReadRecordActivity>()
+                "donate" -> startActivity<DonateActivity>()
+                "about" -> startActivity<AboutActivity>()
             }
             return super.onPreferenceTreeClick(preference)
         }

@@ -2,15 +2,23 @@ package io.legado.app.model.localBook
 
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
-import io.legado.app.App
+import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
 import io.legado.app.help.BookHelp
 import io.legado.app.utils.*
+import splitties.init.appCtx
 import java.io.File
 
 
 object LocalBook {
+    private const val folderName = "bookTxt"
+    val cacheFolder: File by lazy {
+        val rootFile = appCtx.getExternalFilesDir(null)
+            ?: appCtx.externalCacheDir
+            ?: appCtx.cacheDir
+        FileUtils.createFolderIfNotExist(rootFile, folderName)
+    }
 
     fun getChapterList(book: Book): ArrayList<BookChapter> {
         return if (book.isEpub()) {
@@ -28,20 +36,23 @@ object LocalBook {
         }
     }
 
-    fun importFile(path: String): Book {
-        val fileName = if (path.isContentPath()) {
-            val doc = DocumentFile.fromSingleUri(App.INSTANCE, Uri.parse(path))
+    fun importFile(uri: Uri): Book {
+        val path: String
+        val fileName = if (uri.isContentScheme()) {
+            path = uri.toString()
+            val doc = DocumentFile.fromSingleUri(appCtx, uri)
             doc?.let {
-                val bookFile = FileUtils.getFile(AnalyzeTxtFile.cacheFolder, it.name!!)
+                val bookFile = FileUtils.getFile(cacheFolder, it.name!!)
                 if (!bookFile.exists()) {
                     bookFile.createNewFile()
-                    doc.readBytes(App.INSTANCE)?.let { bytes ->
+                    doc.readBytes(appCtx)?.let { bytes ->
                         bookFile.writeBytes(bytes)
                     }
                 }
             }
             doc?.name!!
         } else {
+            path = uri.path!!
             File(path).name
         }
         val str = fileName.substringBeforeLast(".")
@@ -67,26 +78,27 @@ object LocalBook {
             author = author,
             originName = fileName,
             coverUrl = FileUtils.getPath(
-                App.INSTANCE.externalFilesDir,
+                appCtx.externalFilesDir,
                 "covers",
                 "${MD5Utils.md5Encode16(path)}.jpg"
             )
         )
-        App.db.bookDao().insert(book)
+        if (book.isEpub()) EPUBFile.upBookInfo(book)
+        appDb.bookDao.insert(book)
         return book
     }
 
     fun deleteBook(book: Book, deleteOriginal: Boolean) {
         kotlin.runCatching {
             if (book.isLocalTxt()) {
-                val bookFile = FileUtils.getFile(AnalyzeTxtFile.cacheFolder, book.originName)
+                val bookFile = FileUtils.getFile(cacheFolder, book.originName)
                 bookFile.delete()
             }
 
             if (deleteOriginal) {
-                if (book.bookUrl.isContentPath()) {
+                if (book.bookUrl.isContentScheme()) {
                     val uri = Uri.parse(book.bookUrl)
-                    DocumentFile.fromSingleUri(App.INSTANCE, uri)?.delete()
+                    DocumentFile.fromSingleUri(appCtx, uri)?.delete()
                 } else {
                     FileUtils.deleteFile(book.bookUrl)
                 }

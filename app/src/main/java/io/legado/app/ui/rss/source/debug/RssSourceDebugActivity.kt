@@ -1,25 +1,29 @@
 package io.legado.app.ui.rss.source.debug
 
 import android.os.Bundle
-import androidx.recyclerview.widget.LinearLayoutManager
+import android.widget.SearchView
+import androidx.activity.viewModels
 import io.legado.app.R
 import io.legado.app.base.VMBaseActivity
+import io.legado.app.databinding.ActivitySourceDebugBinding
 import io.legado.app.lib.theme.ATH
 import io.legado.app.lib.theme.accentColor
-import io.legado.app.utils.getViewModel
+
 import io.legado.app.utils.gone
-import kotlinx.android.synthetic.main.activity_source_debug.*
-import kotlinx.android.synthetic.main.view_search.*
+import io.legado.app.utils.toastOnUi
 import kotlinx.coroutines.launch
-import org.jetbrains.anko.toast
 
 
-class RssSourceDebugActivity : VMBaseActivity<RssSourceDebugModel>(R.layout.activity_source_debug) {
+class RssSourceDebugActivity : VMBaseActivity<ActivitySourceDebugBinding, RssSourceDebugModel>() {
 
     override val viewModel: RssSourceDebugModel
-        get() = getViewModel(RssSourceDebugModel::class.java)
+            by viewModels()
 
     private lateinit var adapter: RssSourceDebugAdapter
+
+    override fun getViewBinding(): ActivitySourceDebugBinding {
+        return ActivitySourceDebugBinding.inflate(layoutInflater)
+    }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         initRecyclerView()
@@ -28,7 +32,7 @@ class RssSourceDebugActivity : VMBaseActivity<RssSourceDebugModel>(R.layout.acti
             launch {
                 adapter.addItem(msg)
                 if (state == -1 || state == 1000) {
-                    rotate_loading.hide()
+                    binding.rotateLoading.hide()
                 }
             }
         }
@@ -38,23 +42,22 @@ class RssSourceDebugActivity : VMBaseActivity<RssSourceDebugModel>(R.layout.acti
     }
 
     private fun initRecyclerView() {
-        ATH.applyEdgeEffectColor(recycler_view)
+        ATH.applyEdgeEffectColor(binding.recyclerView)
         adapter = RssSourceDebugAdapter(this)
-        recycler_view.layoutManager = LinearLayoutManager(this)
-        recycler_view.adapter = adapter
-        rotate_loading.loadingColor = accentColor
+        binding.recyclerView.adapter = adapter
+        binding.rotateLoading.loadingColor = accentColor
     }
 
     private fun initSearchView() {
-        search_view.gone()
+        binding.titleBar.findViewById<SearchView>(R.id.search_view).gone()
     }
 
     private fun startSearch() {
         adapter.clearItems()
         viewModel.startDebug({
-            rotate_loading.show()
+            binding.rotateLoading.show()
         }, {
-            toast("未获取到源")
+            toastOnUi("未获取到源")
         })
     }
 }

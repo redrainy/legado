@@ -17,23 +17,21 @@ import java.util.*
  * 书源规则解析
  */
 @Keep
-class AnalyzeByJSoup {
-    private var element: Element? = null
+class AnalyzeByJSoup(doc: Any) {
+    companion object {
+        val validKeys = arrayOf("class", "id", "tag", "text", "children")
 
-    fun parse(doc: Any): AnalyzeByJSoup {
-        element = if (doc is Element) {
-            doc
-        } else if (doc is JXNode) {
-            if (doc.isElement) {
-                doc.asElement()
-            } else {
-                Jsoup.parse(doc.value().toString())
+        fun parse(doc: Any): Element {
+            return when (doc) {
+                is Element -> doc
+                is JXNode -> if (doc.isElement) doc.asElement() else Jsoup.parse(doc.toString())
+                else -> Jsoup.parse(doc.toString())
             }
-        } else {
-            Jsoup.parse(doc.toString())
         }
-        return this
+
     }
+
+    private var element: Element = parse(doc)
 
     /**
      * 获取列表
@@ -79,7 +77,7 @@ class AnalyzeByJSoup {
         //拆分规则
         val sourceRule = SourceRule(ruleStr)
         if (isEmpty(sourceRule.elementsRule)) {
-            textS.add(element?.data() ?: "")
+            textS.add(element.data() ?: "")
         } else {
             val elementsType: String
             val ruleStrS: Array<String>
@@ -99,16 +97,16 @@ class AnalyzeByJSoup {
             }
             val results = ArrayList<List<String>>()
             for (ruleStrX in ruleStrS) {
-                val temp: List<String>?
-                temp = if (sourceRule.isCss) {
-                    val lastIndex = ruleStrX.lastIndexOf('@')
-                    getResultLast(
-                        element!!.select(ruleStrX.substring(0, lastIndex)),
-                        ruleStrX.substring(lastIndex + 1)
-                    )
-                } else {
-                    getResultList(ruleStrX)
-                }
+                val temp: List<String>? =
+                    if (sourceRule.isCss) {
+                        val lastIndex = ruleStrX.lastIndexOf('@')
+                        getResultLast(
+                            element.select(ruleStrX.substring(0, lastIndex)),
+                            ruleStrX.substring(lastIndex + 1)
+                        )
+                    } else {
+                        getResultList(ruleStrX)
+                    }
                 if (!temp.isNullOrEmpty()) {
                     results.add(temp)
                     if (results.isNotEmpty() && elementsType == "|") {
@@ -198,20 +196,20 @@ class AnalyzeByJSoup {
 
     private fun filterElements(elements: Elements, rules: Array<String>?): Elements {
         if (rules == null || rules.size < 2) return elements
-        val selectedEls = Elements()
-        for (ele in elements) {
+        val result = Elements()
+        for (element in elements) {
             var isOk = false
             when (rules[0]) {
-                "class" -> isOk = ele.getElementsByClass(rules[1]).size > 0
-                "id" -> isOk = ele.getElementById(rules[1]) != null
-                "tag" -> isOk = ele.getElementsByTag(rules[1]).size > 0
-                "text" -> isOk = ele.getElementsContainingOwnText(rules[1]).size > 0
+                "class" -> isOk = element.getElementsByClass(rules[1]).size > 0
+                "id" -> isOk = element.getElementById(rules[1]) != null
+                "tag" -> isOk = element.getElementsByTag(rules[1]).size > 0
+                "text" -> isOk = element.getElementsContainingOwnText(rules[1]).size > 0
             }
             if (isOk) {
-                selectedEls.add(ele)
+                result.add(element)
             }
         }
-        return selectedEls
+        return result
     }
 
     /**
@@ -232,18 +230,18 @@ class AnalyzeByJSoup {
                     elements.addAll(es)
                 }
             } else {
-                val rulePcx = rule.splitNotBlank("!")
-                val rulePc =
-                    rulePcx[0].trim { it <= ' ' }.splitNotBlank(">")
-                val rules =
-                    rulePc[0].trim { it <= ' ' }.splitNotBlank(".")
+                val rulePcx = rule.split("!")
+                val rulePc = rulePcx[0].trim { it <= ' ' }.split(">")
+                val rules = rulePc[0].trim { it <= ' ' }.split(".")
                 var filterRules: Array<String>? = null
                 var needFilterElements = rulePc.size > 1 && !isEmpty(rulePc[1].trim { it <= ' ' })
                 if (needFilterElements) {
-                    filterRules = rulePc[1].trim { it <= ' ' }.splitNotBlank(".")
+                    filterRules = rulePc[1].trim { it <= ' ' }.split(".").toTypedArray()
                     filterRules[0] = filterRules[0].trim { it <= ' ' }
-                    val validKeys = listOf("class", "id", "tag", "text")
-                    if (filterRules.size < 2 || !validKeys.contains(filterRules[0]) || isEmpty(filterRules[1].trim { it <= ' ' })) {
+                    if (filterRules.size < 2
+                        || !validKeys.contains(filterRules[0])
+                        || filterRules[1].trim { it <= ' ' }.isEmpty()
+                    ) {
                         needFilterElements = false
                     }
                     filterRules[1] = filterRules[1].trim { it <= ' ' }
@@ -257,7 +255,7 @@ class AnalyzeByJSoup {
                     }
                     "class" -> {
                         var elementsByClass = temp.getElementsByClass(rules[1])
-                        if (rules.size == 3) {
+                        if (rules.size == 3 && rules[2].isNotEmpty()) {
                             val index = Integer.parseInt(rules[2])
                             if (index < 0) {
                                 elements.add(elementsByClass[elementsByClass.size + index])
@@ -272,7 +270,7 @@ class AnalyzeByJSoup {
                     }
                     "tag" -> {
                         var elementsByTag = temp.getElementsByTag(rules[1])
-                        if (rules.size == 3) {
+                        if (rules.size == 3 && rules[2].isNotEmpty()) {
                             val index = Integer.parseInt(rules[2])
                             if (index < 0) {
                                 elements.add(elementsByTag[elementsByTag.size + index])
@@ -287,7 +285,7 @@ class AnalyzeByJSoup {
                     }
                     "id" -> {
                         var elementsById = Collector.collect(Evaluator.Id(rules[1]), temp)
-                        if (rules.size == 3) {
+                        if (rules.size == 3 && rules[2].isNotEmpty()) {
                             val index = Integer.parseInt(rules[2])
                             if (index < 0) {
                                 elements.add(elementsById[elementsById.size + index])

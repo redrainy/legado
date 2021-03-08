@@ -1,7 +1,6 @@
 package io.legado.app.ui.config
 
 import android.os.Bundle
-import android.util.DisplayMetrics
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
@@ -11,30 +10,23 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import io.legado.app.R
 import io.legado.app.base.BaseDialogFragment
 import io.legado.app.base.adapter.ItemViewHolder
-import io.legado.app.base.adapter.SimpleRecyclerAdapter
+import io.legado.app.base.adapter.RecyclerAdapter
+import io.legado.app.databinding.DialogRecyclerViewBinding
+import io.legado.app.databinding.ItemThemeConfigBinding
 import io.legado.app.help.ThemeConfig
 import io.legado.app.lib.dialogs.alert
-import io.legado.app.lib.dialogs.noButton
-import io.legado.app.lib.dialogs.okButton
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.ui.widget.recycler.VerticalDivider
-import io.legado.app.utils.GSON
-import io.legado.app.utils.applyTint
-import io.legado.app.utils.getClipText
-import io.legado.app.utils.toast
-import kotlinx.android.synthetic.main.dialog_recycler_view.*
-import kotlinx.android.synthetic.main.item_theme_config.view.*
-import org.jetbrains.anko.sdk27.listeners.onClick
-import org.jetbrains.anko.share
+import io.legado.app.utils.*
+import io.legado.app.utils.viewbindingdelegate.viewBinding
 
 class ThemeListDialog : BaseDialogFragment(), Toolbar.OnMenuItemClickListener {
-
+    private val binding by viewBinding(DialogRecyclerViewBinding::bind)
     private lateinit var adapter: Adapter
 
     override fun onStart() {
         super.onStart()
-        val dm = DisplayMetrics()
-        activity?.windowManager?.defaultDisplay?.getMetrics(dm)
+        val dm = requireActivity().getSize()
         dialog?.window?.setLayout((dm.widthPixels * 0.9).toInt(), (dm.heightPixels * 0.9).toInt())
     }
 
@@ -47,24 +39,24 @@ class ThemeListDialog : BaseDialogFragment(), Toolbar.OnMenuItemClickListener {
     }
 
     override fun onFragmentCreated(view: View, savedInstanceState: Bundle?) {
-        tool_bar.setBackgroundColor(primaryColor)
-        tool_bar.setTitle(R.string.theme_list)
+        binding.toolBar.setBackgroundColor(primaryColor)
+        binding.toolBar.setTitle(R.string.theme_list)
         initView()
         initMenu()
         initData()
     }
 
-    private fun initView() {
+    private fun initView() = with(binding) {
         adapter = Adapter()
-        recycler_view.layoutManager = LinearLayoutManager(requireContext())
-        recycler_view.addItemDecoration(VerticalDivider(requireContext()))
-        recycler_view.adapter = adapter
+        recyclerView.layoutManager = LinearLayoutManager(requireContext())
+        recyclerView.addItemDecoration(VerticalDivider(requireContext()))
+        recyclerView.adapter = adapter
     }
 
-    private fun initMenu() {
-        tool_bar.setOnMenuItemClickListener(this)
-        tool_bar.inflateMenu(R.menu.theme_list)
-        tool_bar.menu.applyTint(requireContext())
+    private fun initMenu() = with(binding) {
+        toolBar.setOnMenuItemClickListener(this@ThemeListDialog)
+        toolBar.inflateMenu(R.menu.theme_list)
+        toolBar.menu.applyTint(requireContext())
     }
 
     fun initData() {
@@ -78,7 +70,7 @@ class ThemeListDialog : BaseDialogFragment(), Toolbar.OnMenuItemClickListener {
                     if (ThemeConfig.addConfig(it)) {
                         initData()
                     } else {
-                        toast("格式不对,添加失败")
+                        toastOnUi("格式不对,添加失败")
                     }
                 }
             }
@@ -93,7 +85,7 @@ class ThemeListDialog : BaseDialogFragment(), Toolbar.OnMenuItemClickListener {
                 initData()
             }
             noButton()
-        }.show().applyTint()
+        }.show()
     }
 
     fun share(index: Int) {
@@ -101,23 +93,33 @@ class ThemeListDialog : BaseDialogFragment(), Toolbar.OnMenuItemClickListener {
         requireContext().share(json, "主题分享")
     }
 
-    inner class Adapter : SimpleRecyclerAdapter<ThemeConfig.Config>(requireContext(), R.layout.item_theme_config) {
+    inner class Adapter :
+        RecyclerAdapter<ThemeConfig.Config, ItemThemeConfigBinding>(requireContext()) {
 
-        override fun convert(holder: ItemViewHolder, item: ThemeConfig.Config, payloads: MutableList<Any>) {
-            holder.itemView.apply {
-                tv_name.text = item.themeName
+        override fun getViewBinding(parent: ViewGroup): ItemThemeConfigBinding {
+            return ItemThemeConfigBinding.inflate(inflater, parent, false)
+        }
+
+        override fun convert(
+            holder: ItemViewHolder,
+            binding: ItemThemeConfigBinding,
+            item: ThemeConfig.Config,
+            payloads: MutableList<Any>
+        ) {
+            binding.apply {
+                tvName.text = item.themeName
             }
         }
 
-        override fun registerListener(holder: ItemViewHolder) {
-            holder.itemView.apply {
-                onClick {
+        override fun registerListener(holder: ItemViewHolder, binding: ItemThemeConfigBinding) {
+            binding.apply {
+                root.setOnClickListener {
                     ThemeConfig.applyConfig(context, ThemeConfig.configList[holder.layoutPosition])
                 }
-                iv_share.onClick {
+                ivShare.setOnClickListener {
                     share(holder.layoutPosition)
                 }
-                iv_delete.onClick {
+                ivDelete.setOnClickListener {
                     delete(holder.layoutPosition)
                 }
             }

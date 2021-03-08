@@ -4,28 +4,194 @@ import android.content.Context
 import android.graphics.Color
 import android.os.Bundle
 import android.view.View
+import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.PopupMenu
 import androidx.core.os.bundleOf
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import io.legado.app.R
 import io.legado.app.base.adapter.ItemViewHolder
-import io.legado.app.base.adapter.SimpleRecyclerAdapter
+import io.legado.app.base.adapter.RecyclerAdapter
 import io.legado.app.data.entities.BookSource
+import io.legado.app.databinding.ItemBookSourceBinding
 import io.legado.app.lib.theme.backgroundColor
 import io.legado.app.ui.widget.recycler.DragSelectTouchHelper
-import io.legado.app.ui.widget.recycler.ItemTouchCallback.OnItemTouchCallbackListener
+import io.legado.app.ui.widget.recycler.ItemTouchCallback.Callback
+import io.legado.app.utils.ColorUtils
 import io.legado.app.utils.invisible
 import io.legado.app.utils.visible
-import kotlinx.android.synthetic.main.item_book_source.view.*
-import org.jetbrains.anko.sdk27.listeners.onClick
-import java.util.*
+
 
 class BookSourceAdapter(context: Context, val callBack: CallBack) :
-    SimpleRecyclerAdapter<BookSource>(context, R.layout.item_book_source),
-    OnItemTouchCallbackListener {
+    RecyclerAdapter<BookSource, ItemBookSourceBinding>(context),
+    Callback {
 
     private val selected = linkedSetOf<BookSource>()
+
+    val diffItemCallback: DiffUtil.ItemCallback<BookSource>
+        get() = object : DiffUtil.ItemCallback<BookSource>() {
+
+            override fun areItemsTheSame(oldItem: BookSource, newItem: BookSource): Boolean {
+                return oldItem.bookSourceUrl == newItem.bookSourceUrl
+            }
+
+            override fun areContentsTheSame(oldItem: BookSource, newItem: BookSource): Boolean {
+                if (oldItem.bookSourceName != newItem.bookSourceName)
+                    return false
+                if (oldItem.bookSourceGroup != newItem.bookSourceGroup)
+                    return false
+                if (oldItem.enabled != newItem.enabled)
+                    return false
+                if (oldItem.enabledExplore != newItem.enabledExplore
+                    || oldItem.exploreUrl != newItem.exploreUrl
+                ) {
+                    return false
+                }
+                return true
+            }
+
+            override fun getChangePayload(oldItem: BookSource, newItem: BookSource): Any? {
+                val payload = Bundle()
+                if (oldItem.bookSourceName != newItem.bookSourceName) {
+                    payload.putString("name", newItem.bookSourceName)
+                }
+                if (oldItem.bookSourceGroup != newItem.bookSourceGroup) {
+                    payload.putString("group", newItem.bookSourceGroup)
+                }
+                if (oldItem.enabled != newItem.enabled) {
+                    payload.putBoolean("enabled", newItem.enabled)
+                }
+                if (oldItem.enabledExplore != newItem.enabledExplore
+                    || oldItem.exploreUrl != newItem.exploreUrl
+                ) {
+                    payload.putBoolean("showExplore", true)
+                }
+                if (payload.isEmpty) {
+                    return null
+                }
+                return payload
+            }
+        }
+
+    override fun getViewBinding(parent: ViewGroup): ItemBookSourceBinding {
+        return ItemBookSourceBinding.inflate(inflater, parent, false)
+    }
+
+    override fun convert(
+        holder: ItemViewHolder,
+        binding: ItemBookSourceBinding,
+        item: BookSource,
+        payloads: MutableList<Any>
+    ) {
+        with(binding) {
+            val payload = payloads.getOrNull(0) as? Bundle
+            if (payload == null) {
+                root.setBackgroundColor(ColorUtils.withAlpha(context.backgroundColor, 0.5f))
+                if (item.bookSourceGroup.isNullOrEmpty()) {
+                    cbBookSource.text = item.bookSourceName
+                } else {
+                    cbBookSource.text =
+                        String.format("%s (%s)", item.bookSourceName, item.bookSourceGroup)
+                }
+                swtEnabled.isChecked = item.enabled
+                cbBookSource.isChecked = selected.contains(item)
+                upShowExplore(ivExplore, item)
+            } else {
+                payload.keySet().map {
+                    when (it) {
+                        "selected" -> cbBookSource.isChecked = selected.contains(item)
+                    }
+                }
+            }
+        }
+    }
+
+    override fun registerListener(holder: ItemViewHolder, binding: ItemBookSourceBinding) {
+        binding.apply {
+            swtEnabled.setOnCheckedChangeListener { view, checked ->
+                if (view.isPressed) {
+                    getItem(holder.layoutPosition)?.let {
+                        if (view.isPressed) {
+                            it.enabled = checked
+                            callBack.update(it)
+                        }
+                    }
+                }
+            }
+            cbBookSource.setOnCheckedChangeListener { view, checked ->
+                if (view.isPressed) {
+                    getItem(holder.layoutPosition)?.let {
+                        if (view.isPressed) {
+                            if (checked) {
+                                selected.add(it)
+                            } else {
+                                selected.remove(it)
+                            }
+                            callBack.upCountView()
+                        }
+                    }
+                }
+            }
+            ivEdit.setOnClickListener {
+                getItem(holder.layoutPosition)?.let {
+                    callBack.edit(it)
+                }
+            }
+            ivMenuMore.setOnClickListener {
+                showMenu(ivMenuMore, holder.layoutPosition)
+            }
+        }
+    }
+
+    override fun onCurrentListChanged() {
+        callBack.upCountView()
+    }
+
+    private fun showMenu(view: View, position: Int) {
+        val source = getItem(position) ?: return
+        val popupMenu = PopupMenu(context, view)
+        popupMenu.inflate(R.menu.book_source_item)
+        val qyMenu = popupMenu.menu.findItem(R.id.menu_enable_explore)
+        if (source.exploreUrl.isNullOrEmpty()) {
+            qyMenu.isVisible = false
+        } else {
+            if (source.enabledExplore) {
+                qyMenu.setTitle(R.string.disable_explore)
+            } else {
+                qyMenu.setTitle(R.string.enable_explore)
+            }
+        }
+        popupMenu.setOnMenuItemClickListener { menuItem ->
+            when (menuItem.itemId) {
+                R.id.menu_top -> callBack.toTop(source)
+                R.id.menu_bottom -> callBack.toBottom(source)
+                R.id.menu_debug_source -> callBack.debug(source)
+                R.id.menu_del -> callBack.del(source)
+                R.id.menu_enable_explore -> {
+                    callBack.update(source.copy(enabledExplore = !source.enabledExplore))
+                }
+            }
+            true
+        }
+        popupMenu.show()
+    }
+
+    private fun upShowExplore(iv: ImageView, source: BookSource) {
+        when {
+            source.exploreUrl.isNullOrEmpty() -> {
+                iv.invisible()
+            }
+            source.enabledExplore -> {
+                iv.setColorFilter(Color.GREEN)
+                iv.visible()
+            }
+            else -> {
+                iv.setColorFilter(Color.RED)
+                iv.visible()
+            }
+        }
+    }
 
     fun selectAll() {
         getItems().forEach {
@@ -57,116 +223,7 @@ class BookSourceAdapter(context: Context, val callBack: CallBack) :
         return selection.sortedBy { it.customOrder }
     }
 
-    override fun convert(holder: ItemViewHolder, item: BookSource, payloads: MutableList<Any>) {
-        with(holder.itemView) {
-            val payload = payloads.getOrNull(0) as? Bundle
-            if (payload == null) {
-                this.setBackgroundColor(context.backgroundColor)
-                if (item.bookSourceGroup.isNullOrEmpty()) {
-                    cb_book_source.text = item.bookSourceName
-                } else {
-                    cb_book_source.text =
-                        String.format("%s (%s)", item.bookSourceName, item.bookSourceGroup)
-                }
-                swt_enabled.isChecked = item.enabled
-                cb_book_source.isChecked = selected.contains(item)
-                upShowExplore(iv_explore, item)
-            } else {
-                payload.keySet().map {
-                    when (it) {
-                        "selected" -> cb_book_source.isChecked = selected.contains(item)
-                        "name", "group" -> if (item.bookSourceGroup.isNullOrEmpty()) {
-                            cb_book_source.text = item.bookSourceName
-                        } else {
-                            cb_book_source.text =
-                                String.format("%s (%s)", item.bookSourceName, item.bookSourceGroup)
-                        }
-                        "enabled" -> swt_enabled.isChecked = payload.getBoolean(it)
-                        "showExplore" -> upShowExplore(iv_explore, item)
-                    }
-                }
-            }
-        }
-    }
-
-    override fun registerListener(holder: ItemViewHolder) {
-        holder.itemView.apply {
-            swt_enabled.setOnCheckedChangeListener { view, checked ->
-                getItem(holder.layoutPosition)?.let {
-                    if (view.isPressed) {
-                        it.enabled = checked
-                        callBack.update(it)
-                    }
-                }
-            }
-            cb_book_source.setOnCheckedChangeListener { view, checked ->
-                getItem(holder.layoutPosition)?.let {
-                    if (view.isPressed) {
-                        if (checked) {
-                            selected.add(it)
-                        } else {
-                            selected.remove(it)
-                        }
-                        callBack.upCountView()
-                    }
-                }
-            }
-            iv_edit.onClick {
-                getItem(holder.layoutPosition)?.let {
-                    callBack.edit(it)
-                }
-            }
-            iv_menu_more.onClick {
-                showMenu(iv_menu_more, holder.layoutPosition)
-            }
-        }
-    }
-
-    private fun showMenu(view: View, position: Int) {
-        val source = getItem(position) ?: return
-        val popupMenu = PopupMenu(context, view)
-        popupMenu.inflate(R.menu.book_source_item)
-        val qyMenu = popupMenu.menu.findItem(R.id.menu_enable_explore)
-        if (source.exploreUrl.isNullOrEmpty()) {
-            qyMenu.isVisible = false
-        } else {
-            if (source.enabledExplore) {
-                qyMenu.setTitle(R.string.disable_explore)
-            } else {
-                qyMenu.setTitle(R.string.enable_explore)
-            }
-        }
-        popupMenu.setOnMenuItemClickListener { menuItem ->
-            when (menuItem.itemId) {
-                R.id.menu_top -> callBack.toTop(source)
-                R.id.menu_bottom -> callBack.toBottom(source)
-                R.id.menu_del -> callBack.del(source)
-                R.id.menu_enable_explore -> {
-                    callBack.update(source.copy(enabledExplore = !source.enabledExplore))
-                }
-            }
-            true
-        }
-        popupMenu.show()
-    }
-
-    private fun upShowExplore(iv: ImageView, source: BookSource) {
-        when {
-            source.exploreUrl.isNullOrEmpty() -> {
-                iv.invisible()
-            }
-            source.enabledExplore -> {
-                iv.setColorFilter(Color.GREEN)
-                iv.visible()
-            }
-            else -> {
-                iv.setColorFilter(Color.RED)
-                iv.visible()
-            }
-        }
-    }
-
-    override fun onMove(srcPosition: Int, targetPosition: Int): Boolean {
+    override fun swap(srcPosition: Int, targetPosition: Int): Boolean {
         val srcItem = getItem(srcPosition)
         val targetItem = getItem(targetPosition)
         if (srcItem != null && targetItem != null) {
@@ -180,8 +237,7 @@ class BookSourceAdapter(context: Context, val callBack: CallBack) :
                 movedItems.add(targetItem)
             }
         }
-        Collections.swap(getItems(), srcPosition, targetPosition)
-        notifyItemMoved(srcPosition, targetPosition)
+        swapItem(srcPosition, targetPosition)
         return true
     }
 
@@ -194,8 +250,8 @@ class BookSourceAdapter(context: Context, val callBack: CallBack) :
         }
     }
 
-    fun initDragSelectTouchHelperCallback(): DragSelectTouchHelper.Callback {
-        return object : DragSelectTouchHelper.AdvanceCallback<BookSource>(Mode.ToggleAndReverse) {
+    val dragSelectCallback: DragSelectTouchHelper.Callback =
+        object : DragSelectTouchHelper.AdvanceCallback<BookSource>(Mode.ToggleAndReverse) {
             override fun currentSelectedId(): MutableSet<BookSource> {
                 return selected
             }
@@ -218,7 +274,6 @@ class BookSourceAdapter(context: Context, val callBack: CallBack) :
                 return false
             }
         }
-    }
 
     interface CallBack {
         fun del(bookSource: BookSource)
@@ -226,6 +281,7 @@ class BookSourceAdapter(context: Context, val callBack: CallBack) :
         fun update(vararg bookSource: BookSource)
         fun toTop(bookSource: BookSource)
         fun toBottom(bookSource: BookSource)
+        fun debug(bookSource: BookSource)
         fun upOrder()
         fun upCountView()
     }

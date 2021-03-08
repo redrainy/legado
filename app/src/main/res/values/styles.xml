@@ -33,6 +33,7 @@
         <item name="android:popupMenuStyle">@style/Style.PopupMenu</item>
         <item name="android:statusBarColor">@color/transparent</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:enforceNavigationBarContrast" tools:ignore="NewApi">false</item>
     </style>
 
     <style name="AppTheme.AppBarOverlay.Light" parent="ThemeOverlay.AppCompat.Light">
@@ -52,8 +53,7 @@
 
     <style name="Spinner" parent="android:Theme.Holo.Light" />
 
-    //**************************************************************System
-    Style******************************************************************************//
+    //**********System Style******************//
 
     <style name="Style.NavigationView" parent="android:Widget">
         <item name="android:listPreferredItemHeightSmall">44dp</item>
@@ -85,8 +85,7 @@
         <item name="android:textSize">20sp</item>
     </style>
 
-    //**************************************************************Widget
-    Style******************************************************************************//
+    //*******************Widget Style**********************************//
 
     <style name="Style.Shadow.Top" parent="android:Widget">
         <item name="android:layout_width">match_parent</item>
@@ -130,4 +129,5 @@
     <style name="Style.Text.Second.Normal.Wrap">
         <item name="android:layout_width">wrap_content</item>
     </style>
+
 </resources>

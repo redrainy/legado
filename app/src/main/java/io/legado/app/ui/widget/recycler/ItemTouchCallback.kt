@@ -12,20 +12,17 @@ import androidx.viewpager.widget.ViewPager
  * Created by GKF on 2018/3/16.
  */
 
-class ItemTouchCallback : ItemTouchHelper.Callback() {
+@Suppress("MemberVisibilityCanBePrivate")
+class ItemTouchCallback(private val callback: Callback) : ItemTouchHelper.Callback() {
 
     private var swipeRefreshLayout: SwipeRefreshLayout? = null
     private var viewPager: ViewPager? = null
 
     /**
-     * Item操作的回调
-     */
-    var onItemTouchCallbackListener: OnItemTouchCallbackListener? = null
-
-    /**
      * 是否可以拖拽
      */
     var isCanDrag = false
+
     /**
      * 是否可以被滑动
      */
@@ -88,13 +85,22 @@ class ItemTouchCallback : ItemTouchHelper.Callback() {
         srcViewHolder: RecyclerView.ViewHolder,
         targetViewHolder: RecyclerView.ViewHolder
     ): Boolean {
-        return onItemTouchCallbackListener
-            ?.onMove(srcViewHolder.adapterPosition, targetViewHolder.adapterPosition)
-            ?: false
+        val fromPosition: Int = srcViewHolder.adapterPosition
+        val toPosition: Int = targetViewHolder.adapterPosition
+        if (fromPosition < toPosition) {
+            for (i in fromPosition until toPosition) {
+                callback.swap(i, i + 1)
+            }
+        } else {
+            for (i in fromPosition downTo toPosition + 1) {
+                callback.swap(i, i - 1)
+            }
+        }
+        return true
     }
 
     override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
-        onItemTouchCallbackListener?.onSwiped(viewHolder.adapterPosition)
+        callback.onSwiped(viewHolder.adapterPosition)
     }
 
     override fun onSelectedChanged(viewHolder: RecyclerView.ViewHolder?, actionState: Int) {
@@ -106,10 +112,10 @@ class ItemTouchCallback : ItemTouchHelper.Callback() {
 
     override fun clearView(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder) {
         super.clearView(recyclerView, viewHolder)
-        onItemTouchCallbackListener?.onClearView(recyclerView, viewHolder)
+        callback.onClearView(recyclerView, viewHolder)
     }
 
-    interface OnItemTouchCallbackListener {
+    interface Callback {
 
         /**
          * 当某个Item被滑动删除的时候
@@ -127,7 +133,7 @@ class ItemTouchCallback : ItemTouchHelper.Callback() {
          * @param targetPosition 目的地的Item的position
          * @return 开发者处理了操作应该返回true，开发者没有处理就返回false
          */
-        fun onMove(srcPosition: Int, targetPosition: Int): Boolean {
+        fun swap(srcPosition: Int, targetPosition: Int): Boolean {
             return true
         }
 

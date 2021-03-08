@@ -37,9 +37,9 @@
                             android:title="@string/sort_auto" />
 
                         <item
-                            android:id="@+id/menu_sort_pin_yin"
+                            android:id="@+id/menu_sort_name"
                             android:checkable="true"
-                            android:title="@string/sort_pin_yin" />
+                            android:title="@string/sort_name" />
 
                         <item
                             android:id="@+id/menu_sort_url"
@@ -49,7 +49,13 @@
                         <item
                             android:id="@+id/menu_sort_time"
                             android:checkable="true"
-                            android:title="@string/sort_by_lastUppdateTime" />
+                            android:title="@string/sort_by_lastUpdateTime" />
+
+                        <item
+                            android:id="@+id/menu_sort_enable"
+                            android:checkable="true"
+                            android:title="@string/sort_enable" />
+
                     </group>
 
                 </menu>
@@ -102,5 +108,10 @@
         android:title="@string/share_selected_source"
         app:showAsAction="never" />
 
+    <item
+        android:id="@+id/menu_help"
+        android:icon="@drawable/ic_help"
+        android:title="@string/help"
+        app:showAsAction="never" />
 
 </menu>

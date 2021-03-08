@@ -8,6 +8,7 @@ import android.content.IntentFilter
 import android.net.Uri
 import android.os.Build
 import android.os.Handler
+import android.os.Looper
 import androidx.core.app.NotificationCompat
 import androidx.core.content.FileProvider
 import androidx.core.os.bundleOf
@@ -19,8 +20,8 @@ import io.legado.app.constant.IntentAction
 import io.legado.app.help.IntentHelp
 import io.legado.app.utils.RealPathUtil
 import io.legado.app.utils.msg
-import org.jetbrains.anko.downloadManager
-import org.jetbrains.anko.toast
+import io.legado.app.utils.toastOnUi
+import splitties.systemservices.downloadManager
 import java.io.File
 
 
@@ -28,7 +29,7 @@ class DownloadService : BaseService() {
 
     private val downloads = hashMapOf<Long, String>()
     private val completeDownloads = hashSetOf<Long>()
-    private val handler = Handler()
+    private val handler = Handler(Looper.getMainLooper())
     private val runnable = Runnable {
         checkDownloadState()
     }
@@ -148,7 +149,7 @@ class DownloadService : BaseService() {
             try {
                 startActivity(intent)
             } catch (e: Exception) {
-                toast(e.msg)
+                toastOnUi(e.msg)
             }
         }
     }

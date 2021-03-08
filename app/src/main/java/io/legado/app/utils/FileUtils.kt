@@ -3,15 +3,15 @@ package io.legado.app.utils
 import android.os.Environment
 import android.webkit.MimeTypeMap
 import androidx.annotation.IntDef
-import io.legado.app.App
-import io.legado.app.ui.filechooser.utils.ConvertUtils
+import io.legado.app.ui.filepicker.utils.ConvertUtils
+import splitties.init.appCtx
 import java.io.*
 import java.nio.charset.Charset
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.regex.Pattern
 
-@Suppress("unused")
+@Suppress("unused", "MemberVisibilityCanBePrivate")
 object FileUtils {
 
     fun exists(root: File, vararg subDirFiles: String): Boolean {
@@ -105,8 +105,8 @@ object FileUtils {
     }
 
     fun getCachePath(): String {
-        return App.INSTANCE.externalCacheDir?.absolutePath
-            ?: App.INSTANCE.cacheDir.absolutePath
+        return appCtx.externalCacheDir?.absolutePath
+            ?: appCtx.cacheDir.absolutePath
     }
 
     fun getSdCardPath(): String {
@@ -489,11 +489,10 @@ object FileUtils {
      */
     @JvmOverloads
     fun writeText(filepath: String, content: String, charset: String = "utf-8"): Boolean {
-        try {
+        return try {
             writeBytes(filepath, content.toByteArray(charset(charset)))
-            return true
         } catch (e: UnsupportedEncodingException) {
-            return false
+            false
         }
 
     }
@@ -569,15 +568,15 @@ object FileUtils {
      * 获取文件名（不包括扩展名）
      */
     fun getNameExcludeExtension(path: String): String {
-        try {
+        return try {
             var fileName = File(path).name
             val lastIndexOf = fileName.lastIndexOf(".")
             if (lastIndexOf != -1) {
                 fileName = fileName.substring(0, lastIndexOf)
             }
-            return fileName
+            fileName
         } catch (e: Exception) {
-            return ""
+            ""
         }
 
     }
@@ -711,7 +710,7 @@ object FileUtils {
                     val s1 = f1.name
                     val s2 = f2.name
                     if (caseSensitive) {
-                        s1.compareTo(s2)
+                        s1.cnCompare(s2)
                     } else {
                         s1.compareTo(s2, ignoreCase = true)
                     }

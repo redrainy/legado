@@ -1,6 +1,6 @@
 package io.legado.app.model.webBook
 
-import io.legado.app.App
+import io.legado.app.data.appDb
 import io.legado.app.data.entities.BookSource
 import io.legado.app.data.entities.SearchBook
 import io.legado.app.help.AppConfig
@@ -10,6 +10,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.ExecutorCoroutineDispatcher
 import kotlinx.coroutines.asCoroutineDispatcher
+import splitties.init.appCtx
 import java.util.concurrent.Executors
 import kotlin.math.min
 
@@ -21,7 +22,6 @@ class SearchBookModel(private val scope: CoroutineScope, private val callBack: C
     private var searchKey: String = ""
     private var tasks = CompositeCoroutine()
     private var bookSourceList = arrayListOf<BookSource>()
-    private val variableBookMap = hashMapOf<String, SearchBook>()
 
     @Volatile
     private var searchIndex = -1
@@ -45,12 +45,12 @@ class SearchBookModel(private val scope: CoroutineScope, private val callBack: C
             initSearchPool()
             mSearchId = searchId
             searchPage = 1
-            val searchGroup = App.INSTANCE.getPrefString("searchGroup") ?: ""
+            val searchGroup = appCtx.getPrefString("searchGroup") ?: ""
             bookSourceList.clear()
             if (searchGroup.isBlank()) {
-                bookSourceList.addAll(App.db.bookSourceDao().allEnabled)
+                bookSourceList.addAll(appDb.bookSourceDao.allEnabled)
             } else {
-                bookSourceList.addAll(App.db.bookSourceDao().getEnabledByGroup(searchGroup))
+                bookSourceList.addAll(appDb.bookSourceDao.getEnabledByGroup(searchGroup))
             }
         } else {
             searchPage++
@@ -61,15 +61,6 @@ class SearchBookModel(private val scope: CoroutineScope, private val callBack: C
         }
     }
 
-    private fun getVariableBook(sourceUrl: String): SearchBook {
-        var vBook = variableBookMap[sourceUrl]
-        if (vBook == null) {
-            vBook = SearchBook()
-            variableBookMap[sourceUrl] = vBook
-        }
-        return vBook
-    }
-
     private fun search(searchId: Long) {
         synchronized(this) {
             if (searchIndex >= bookSourceList.lastIndex) {
@@ -77,12 +68,10 @@ class SearchBookModel(private val scope: CoroutineScope, private val callBack: C
             }
             searchIndex++
             val source = bookSourceList[searchIndex]
-            val variableBook = getVariableBook(source.bookSourceUrl)
             val task = WebBook(source).searchBook(
+                scope,
                 searchKey,
                 searchPage,
-                variableBook,
-                scope = scope,
                 context = searchPool!!
             ).timeout(30000L)
                 .onSuccess(IO) {

@@ -9,13 +9,14 @@ import androidx.annotation.CheckResult
 import androidx.annotation.ColorInt
 import androidx.annotation.ColorRes
 import androidx.core.content.ContextCompat
-import io.legado.app.App
 import io.legado.app.R
 import io.legado.app.utils.ColorUtils
+import splitties.init.appCtx
 
 /**
  * @author Aidan Follestad (afollestad), Karim Abou Zeid (kabouzeid)
  */
+@Suppress("unused")
 class ThemeStore @SuppressLint("CommitPrefEdits")
 private constructor(private val mContext: Context) : ThemeStoreInterface {
     private val mEditor: SharedPreferences.Editor
@@ -199,7 +200,7 @@ private constructor(private val mContext: Context) : ThemeStoreInterface {
 
         @CheckResult
         @ColorInt
-        fun primaryColor(context: Context = App.INSTANCE): Int {
+        fun primaryColor(context: Context = appCtx): Int {
             return prefs(context).getInt(
                 ThemeStorePrefKeys.KEY_PRIMARY_COLOR,
                 ATHUtils.resolveColor(context, R.attr.colorPrimary, Color.parseColor("#455A64"))
@@ -217,7 +218,7 @@ private constructor(private val mContext: Context) : ThemeStoreInterface {
 
         @CheckResult
         @ColorInt
-        fun accentColor(context: Context = App.INSTANCE): Int {
+        fun accentColor(context: Context = appCtx): Int {
             return prefs(context).getInt(
                 ThemeStorePrefKeys.KEY_ACCENT_COLOR,
                 ATHUtils.resolveColor(context, R.attr.colorAccent, Color.parseColor("#263238"))
@@ -291,7 +292,7 @@ private constructor(private val mContext: Context) : ThemeStoreInterface {
 
         @CheckResult
         @ColorInt
-        fun backgroundColor(context: Context = App.INSTANCE): Int {
+        fun backgroundColor(context: Context = appCtx): Int {
             return prefs(context).getInt(
                 ThemeStorePrefKeys.KEY_BACKGROUND_COLOR,
                 ATHUtils.resolveColor(context, android.R.attr.colorBackground)
@@ -313,7 +314,7 @@ private constructor(private val mContext: Context) : ThemeStoreInterface {
 
         @CheckResult
         @ColorInt
-        fun bottomBackground(context: Context = App.INSTANCE): Int {
+        fun bottomBackground(context: Context = appCtx): Int {
             return prefs(context).getInt(
                 ThemeStorePrefKeys.KEY_BOTTOM_BACKGROUND,
                 ATHUtils.resolveColor(context, android.R.attr.colorBackground)
