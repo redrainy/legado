@@ -69,7 +69,7 @@ object ChapterProvider {
     @JvmStatic
     lateinit var contentPaint: TextPaint
 
-    private const val srcReplaceChar = "🖼"
+    private const val srcReplaceChar = "▩"
 
     init {
         upStyle()
@@ -90,7 +90,7 @@ object ChapterProvider {
         textPages.add(TextPage())
         contents.forEachIndexed { index, content ->
             if (book.getImageStyle() == Book.imgStyleText) {
-                var text = content.replace(srcReplaceChar, "画")
+                var text = content.replace(srcReplaceChar, "▣")
                 val srcList = LinkedList<String>()
                 val sb = StringBuffer()
                 val matcher = AppPattern.imgPattern.matcher(text)
@@ -117,30 +117,21 @@ object ChapterProvider {
                         if (text.isNotBlank()) {
                             val matcher = AppPattern.imgPattern.matcher(text)
                             if (matcher.find()) {
-                                matcher.group(1)?.let { mt ->
-                                    if (!book.isEpub()) {
-                                        val src = NetworkUtils.getAbsoluteURL(bookChapter.url, mt)
+                                matcher.group(1)?.let { src ->
+                                    //if (!book.isEpub()) {
                                         durY = setTypeImage(
-                                            book,
-                                            bookChapter,
-                                            src,
-                                            durY,
-                                            textPages,
-                                            book.getImageStyle()
+                                            book, bookChapter, src,
+                                            durY, textPages, book.getImageStyle()
                                         )
-                                    }
+                                    //}
                                 }
                             } else {
                                 val isTitle = index == 0
                                 val textPaint = if (isTitle) titlePaint else contentPaint
                                 if (!(isTitle && ReadBookConfig.titleMode == 2)) {
                                     durY = setTypeText(
-                                        text,
-                                        durY,
-                                        textPages,
-                                        stringBuilder,
-                                        isTitle,
-                                        textPaint
+                                        text, durY, textPages,
+                                        stringBuilder, isTitle, textPaint
                                     )
                                 }
                             }

@@ -1,7 +1,7 @@
 package io.legado.app.service.help
 
 import androidx.lifecycle.MutableLiveData
-import com.hankcs.hanlp.HanLP
+import com.github.liuyueyi.quick.transfer.ChineseUtils
 import io.legado.app.constant.BookType
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.*
@@ -21,6 +21,8 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import splitties.init.appCtx
+import kotlin.math.max
+import kotlin.math.min
 
 
 @Suppress("MemberVisibilityCanBePrivate")
@@ -137,12 +139,12 @@ object ReadBook {
                     callBack?.upContent()
                 }
                 loadContent(durChapterIndex.plus(1), upContent, false)
-                if (AppConfig.preDownload) {
-                    GlobalScope.launch(Dispatchers.IO) {
-                        for (i in 2..9) {
-                            delay(1000)
-                            download(durChapterIndex + i)
-                        }
+                GlobalScope.launch(Dispatchers.IO) {
+                    val maxChapterIndex =
+                        min(chapterSize - 1, durChapterIndex + AppConfig.preDownloadNum)
+                    for (i in durChapterIndex.plus(2)..maxChapterIndex) {
+                        delay(1000)
+                        download(i)
                     }
                 }
             }
@@ -169,12 +171,11 @@ object ReadBook {
                     callBack?.upContent()
                 }
                 loadContent(durChapterIndex.minus(1), upContent, false)
-                if (AppConfig.preDownload) {
-                    GlobalScope.launch(Dispatchers.IO) {
-                        for (i in 2..9) {
-                            delay(1000)
-                            download(durChapterIndex - i)
-                        }
+                GlobalScope.launch(Dispatchers.IO) {
+                    val minChapterIndex = max(0, durChapterIndex - 5)
+                    for (i in durChapterIndex.minus(2) downTo minChapterIndex) {
+                        delay(1000)
+                        download(i)
                     }
                 }
             }
@@ -407,8 +408,8 @@ object ReadBook {
             ImageProvider.clearOut(durChapterIndex)
             if (chapter.index in durChapterIndex - 1..durChapterIndex + 1) {
                 chapter.title = when (AppConfig.chineseConverterType) {
-                    1 -> HanLP.convertToSimplifiedChinese(chapter.title)
-                    2 -> HanLP.convertToTraditionalChinese(chapter.title)
+                    1 -> ChineseUtils.t2s(chapter.title)
+                    2 -> ChineseUtils.s2t(chapter.title)
                     else -> chapter.title
                 }
                 val contents = contentProcessor!!.getContent(book, chapter.title, content)

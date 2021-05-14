@@ -10,8 +10,8 @@ import androidx.activity.viewModels
 import androidx.core.view.isVisible
 import io.legado.app.R
 import io.legado.app.base.VMBaseActivity
+import io.legado.app.constant.AppConst.charsets
 import io.legado.app.constant.PreferKey
-import io.legado.app.constant.charsets
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.Bookmark
 import io.legado.app.databinding.ActivityBookReadBinding
@@ -39,7 +39,7 @@ import io.legado.app.utils.requestInputMethod
  * 阅读界面
  */
 abstract class ReadBookBaseActivity :
-    VMBaseActivity<ActivityBookReadBinding, ReadBookViewModel>() {
+    VMBaseActivity<ActivityBookReadBinding, ReadBookViewModel>(imageBg = false) {
 
     override val viewModel: ReadBookViewModel
             by viewModels()

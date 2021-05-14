@@ -6,9 +6,9 @@ import io.legado.app.data.entities.BookSource
 import io.legado.app.help.BookHelp
 import io.legado.app.model.Debug
 import io.legado.app.model.analyzeRule.AnalyzeRule
+import io.legado.app.utils.HtmlFormatter
 import io.legado.app.utils.NetworkUtils
 import io.legado.app.utils.StringUtils.wordCountFormat
-import io.legado.app.utils.htmlFormat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ensureActive
 import splitties.init.appCtx
@@ -29,6 +29,7 @@ object BookInfo {
             appCtx.getString(R.string.error_get_web_content, baseUrl)
         )
         Debug.log(bookSource.bookSourceUrl, "≡获取成功:${baseUrl}")
+        Debug.log(bookSource.bookSourceUrl, body, state = 20)
         val analyzeRule = AnalyzeRule(book)
         analyzeRule.setContent(body).setBaseUrl(baseUrl)
         analyzeRule.setRedirectUrl(redirectUrl)
@@ -93,7 +94,7 @@ object BookInfo {
         scope.ensureActive()
         Debug.log(bookSource.bookSourceUrl, "┌获取简介")
         analyzeRule.getString(infoRule.intro).let {
-            if (it.isNotEmpty()) book.intro = it.htmlFormat()
+            if (it.isNotEmpty()) book.intro = HtmlFormatter.format(it)
         }
         Debug.log(bookSource.bookSourceUrl, "└${book.intro}")
         scope.ensureActive()
