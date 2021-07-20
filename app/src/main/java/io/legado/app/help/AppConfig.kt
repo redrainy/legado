@@ -10,6 +10,7 @@ import splitties.init.appCtx
 @Suppress("MemberVisibilityCanBePrivate")
 object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
     val isGooglePlay = appCtx.channel == "google"
+    val isCronet = appCtx.channel == "cronet"
     var userAgent: String = getPrefUserAgent()
     var isEInkMode = appCtx.getPrefString(PreferKey.themeMode) == "3"
     var clickActionTL = appCtx.getPrefInt(PreferKey.clickActionTL, 2)
@@ -90,6 +91,24 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
     val screenOrientation: String?
         get() = appCtx.getPrefString(PreferKey.screenOrientation)
 
+    var bookGroupStyle: Int
+        get() = appCtx.getPrefInt(PreferKey.bookGroupStyle, 0)
+        set(value) {
+            appCtx.putPrefInt(PreferKey.bookGroupStyle, value)
+        }
+
+    var bookExportFileName: String?
+        get() = appCtx.getPrefString(PreferKey.bookExportFileName)
+        set(value) {
+            appCtx.putPrefString(PreferKey.bookExportFileName, value)
+        }
+
+    var bookImportFileName: String?
+        get() = appCtx.getPrefString(PreferKey.bookImportFileName)
+        set(value) {
+            appCtx.putPrefString(PreferKey.bookImportFileName, value)
+        }
+
     var backupPath: String?
         get() = appCtx.getPrefString(PreferKey.backupPath)
         set(value) {
@@ -100,7 +119,10 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
             }
         }
 
-    val isShowRSS: Boolean
+    val showDiscovery: Boolean
+        get() = appCtx.getPrefBoolean(PreferKey.showDiscovery, true)
+
+    val showRSS: Boolean
         get() = appCtx.getPrefBoolean(PreferKey.showRss, true)
 
     val autoRefreshBook: Boolean
@@ -209,8 +231,8 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
     private fun getPrefUserAgent(): String {
         val ua = appCtx.getPrefString(PreferKey.userAgent)
         if (ua.isNullOrBlank()) {
-            return "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36"
-        }
+            return "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    }
         return ua
     }
 }

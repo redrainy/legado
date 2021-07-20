@@ -38,7 +38,7 @@ abstract class BaseActivity<VB : ViewBinding>(
 ) : AppCompatActivity(),
     CoroutineScope by MainScope() {
 
-    protected val binding: VB by lazy { getViewBinding() }
+    protected abstract val binding: VB
 
     val isInMultiWindow: Boolean
         get() {
@@ -52,8 +52,6 @@ abstract class BaseActivity<VB : ViewBinding>(
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(LanguageUtils.setConfiguration(newBase))
     }
-
-    protected abstract fun getViewBinding(): VB
 
     override fun onCreateView(
         parent: View?,
@@ -175,12 +173,14 @@ abstract class BaseActivity<VB : ViewBinding>(
             }
         }
         if (imageBg) {
-            ThemeConfig.getBgImage(this)?.let {
-                try {
+            try {
+                ThemeConfig.getBgImage(this)?.let {
                     window.decorView.background = it
-                } catch (e: OutOfMemoryError) {
-                    toastOnUi("Image Bg Out Of Memory")
                 }
+            } catch (e: OutOfMemoryError) {
+                toastOnUi(e.localizedMessage)
+            } catch (e: Exception) {
+                toastOnUi(e.localizedMessage)
             }
         }
     }

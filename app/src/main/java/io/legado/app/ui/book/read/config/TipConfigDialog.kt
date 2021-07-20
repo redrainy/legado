@@ -46,14 +46,14 @@ class TipConfigDialog : BaseDialogFragment() {
         }
     }
 
-    private fun initView() = with(binding) {
+    private fun initView() = binding.run {
         rgTitleMode.checkByIndex(ReadBookConfig.titleMode)
         dsbTitleSize.progress = ReadBookConfig.titleSize
         dsbTitleTop.progress = ReadBookConfig.titleTopSpacing
         dsbTitleBottom.progress = ReadBookConfig.titleBottomSpacing
 
-        tvHeaderShow.text = ReadTipConfig.headerModes[ReadTipConfig.headerMode]
-        tvFooterShow.text = ReadTipConfig.footerModes[ReadTipConfig.footerMode]
+        tvHeaderShow.text = ReadTipConfig.getHeaderModes(requireContext())[ReadTipConfig.headerMode]
+        tvFooterShow.text = ReadTipConfig.getFooterModes(requireContext())[ReadTipConfig.footerMode]
 
         tvHeaderLeft.text = ReadTipConfig.tipHeaderLeftStr
         tvHeaderMiddle.text = ReadTipConfig.tipHeaderMiddleStr
@@ -74,7 +74,7 @@ class TipConfigDialog : BaseDialogFragment() {
             }
     }
 
-    private fun initEvent() = with(binding) {
+    private fun initEvent() = binding.run {
         rgTitleMode.setOnCheckedChangeListener { _, checkedId ->
             ReadBookConfig.titleMode = rgTitleMode.getIndexById(checkedId)
             postEvent(EventBus.UP_CONFIG, true)
@@ -92,16 +92,18 @@ class TipConfigDialog : BaseDialogFragment() {
             postEvent(EventBus.UP_CONFIG, true)
         }
         llHeaderShow.setOnClickListener {
-            selector(items = ReadTipConfig.headerModes.values.toList()) { _, i ->
-                ReadTipConfig.headerMode = ReadTipConfig.headerModes.keys.toList()[i]
-                tvHeaderShow.text = ReadTipConfig.headerModes[ReadTipConfig.headerMode]
+            val headerModes = ReadTipConfig.getHeaderModes(requireContext())
+            selector(items = headerModes.values.toList()) { _, i ->
+                ReadTipConfig.headerMode = headerModes.keys.toList()[i]
+                tvHeaderShow.text = headerModes[ReadTipConfig.headerMode]
                 postEvent(EventBus.UP_CONFIG, true)
             }
         }
         llFooterShow.setOnClickListener {
-            selector(items = ReadTipConfig.footerModes.values.toList()) { _, i ->
-                ReadTipConfig.footerMode = ReadTipConfig.footerModes.keys.toList()[i]
-                tvFooterShow.text = ReadTipConfig.footerModes[ReadTipConfig.footerMode]
+            val footerModes = ReadTipConfig.getFooterModes(requireContext())
+            selector(items = footerModes.values.toList()) { _, i ->
+                ReadTipConfig.footerMode = footerModes.keys.toList()[i]
+                tvFooterShow.text = footerModes[ReadTipConfig.footerMode]
                 postEvent(EventBus.UP_CONFIG, true)
             }
         }

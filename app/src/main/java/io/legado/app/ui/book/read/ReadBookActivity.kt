@@ -23,7 +23,6 @@ import io.legado.app.constant.Status
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
 import io.legado.app.data.entities.BookProgress
-import io.legado.app.data.entities.Bookmark
 import io.legado.app.help.ReadBookConfig
 import io.legado.app.help.ReadTipConfig
 import io.legado.app.help.storage.Backup
@@ -47,7 +46,8 @@ import io.legado.app.ui.book.read.page.provider.TextPageFactory
 import io.legado.app.ui.book.searchContent.SearchContentActivity
 import io.legado.app.ui.book.source.edit.BookSourceEditActivity
 import io.legado.app.ui.book.toc.TocActivityResult
-import io.legado.app.ui.login.SourceLogin
+import io.legado.app.ui.dict.DictDialog
+import io.legado.app.ui.login.SourceLoginActivity
 import io.legado.app.ui.replace.ReplaceRuleActivity
 import io.legado.app.ui.replace.edit.ReplaceEditActivity
 import io.legado.app.ui.widget.dialog.TextDialog
@@ -73,9 +73,7 @@ class ReadBookActivity : ReadBookBaseActivity(),
     private val tocActivity =
         registerForActivityResult(TocActivityResult()) {
             it?.let {
-                if (it.first != ReadBook.durChapterIndex) {
-                    viewModel.openChapter(it.first, it.second)
-                }
+                viewModel.openChapter(it.first, it.second)
             }
         }
     private val sourceEditActivity =
@@ -243,14 +241,12 @@ class ReadBookActivity : ReadBookBaseActivity(),
                 val book = ReadBook.book
                 val page = ReadBook.curTextChapter?.page(ReadBook.durPageIndex())
                 if (book != null && page != null) {
-                    val bookmark = Bookmark(
-                        bookUrl = book.bookUrl,
-                        bookName = book.name,
-                        chapterIndex = ReadBook.durChapterIndex,
-                        chapterPos = ReadBook.durChapterPos,
-                        chapterName = page.title,
+                    val bookmark = book.createBookMark().apply {
+                        chapterIndex = ReadBook.durChapterIndex
+                        chapterPos = ReadBook.durChapterPos
+                        chapterName = page.title
                         bookText = page.text.trim()
-                    )
+                    }
                     showBookMark(bookmark)
                 }
             }
@@ -420,7 +416,7 @@ class ReadBookActivity : ReadBookBaseActivity(),
      * view触摸,文字选择
      */
     @SuppressLint("ClickableViewAccessibility")
-    override fun onTouch(v: View, event: MotionEvent): Boolean = with(binding) {
+    override fun onTouch(v: View, event: MotionEvent): Boolean = binding.run {
         when (event.action) {
             MotionEvent.ACTION_DOWN -> textActionMenu.dismiss()
             MotionEvent.ACTION_MOVE -> {
@@ -443,7 +439,7 @@ class ReadBookActivity : ReadBookBaseActivity(),
     /**
      * 更新文字选择开始位置
      */
-    override fun upSelectedStart(x: Float, y: Float, top: Float) = with(binding) {
+    override fun upSelectedStart(x: Float, y: Float, top: Float) = binding.run {
         cursorLeft.x = x - cursorLeft.width
         cursorLeft.y = y
         cursorLeft.visible(true)
@@ -454,7 +450,7 @@ class ReadBookActivity : ReadBookBaseActivity(),
     /**
      * 更新文字选择结束位置
      */
-    override fun upSelectedEnd(x: Float, y: Float) = with(binding) {
+    override fun upSelectedEnd(x: Float, y: Float) = binding.run {
         cursorRight.x = x
         cursorRight.y = y
         cursorRight.visible(true)
@@ -463,7 +459,7 @@ class ReadBookActivity : ReadBookBaseActivity(),
     /**
      * 取消文字选择
      */
-    override fun onCancelSelect() = with(binding) {
+    override fun onCancelSelect() = binding.run {
         cursorLeft.invisible()
         cursorRight.invisible()
         textActionMenu.dismiss()
@@ -472,7 +468,7 @@ class ReadBookActivity : ReadBookBaseActivity(),
     /**
      * 显示文本操作菜单
      */
-    override fun showTextActionMenu() = with(binding) {
+    override fun showTextActionMenu() = binding.run {
         textActionMenu.contentView.measure(
             View.MeasureSpec.UNSPECIFIED,
             View.MeasureSpec.UNSPECIFIED
@@ -536,6 +532,10 @@ class ReadBookActivity : ReadBookBaseActivity(),
                 openSearchActivity(selectedText)
                 return true
             }
+            R.id.menu_dict -> {
+                DictDialog.dict(supportFragmentManager, selectedText)
+                return true
+            }
         }
         return false
     }
@@ -543,7 +543,7 @@ class ReadBookActivity : ReadBookBaseActivity(),
     /**
      * 文本选择菜单操作完成
      */
-    override fun onMenuActionFinally() = with(binding) {
+    override fun onMenuActionFinally() = binding.run {
         textActionMenu.dismiss()
         readView.curPage.cancelSelect()
         readView.isTextSelected = false
@@ -773,7 +773,7 @@ class ReadBookActivity : ReadBookBaseActivity(),
 
     override fun showLogin() {
         ReadBook.webBook?.bookSource?.let {
-            startActivity<SourceLogin> {
+            startActivity<SourceLoginActivity> {
                 putExtra("sourceUrl", it.bookSourceUrl)
                 putExtra("loginUrl", it.loginUrl)
                 putExtra("userAgent", it.getHeaderMap()[AppConst.UA_NAME])
@@ -796,7 +796,7 @@ class ReadBookActivity : ReadBookBaseActivity(),
     /**
      * colorSelectDialog
      */
-    override fun onColorSelected(dialogId: Int, color: Int) = with(ReadBookConfig.durConfig) {
+    override fun onColorSelected(dialogId: Int, color: Int) = ReadBookConfig.durConfig.run {
         when (dialogId) {
             TEXT_COLOR -> {
                 setCurTextColor(color)
@@ -899,7 +899,7 @@ class ReadBookActivity : ReadBookBaseActivity(),
         }
     }
 
-    override fun observeLiveBus() = with(binding) {
+    override fun observeLiveBus() = binding.run {
         super.observeLiveBus()
         observeEvent<String>(EventBus.TIME_CHANGED) { readView.upTime() }
         observeEvent<Int>(EventBus.BATTERY_CHANGED) { readView.upBattery(it) }

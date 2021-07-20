@@ -10,6 +10,7 @@ import io.legado.app.help.IntentDataHelp
 import io.legado.app.lib.dialogs.alert
 
 import io.legado.app.utils.toastOnUi
+import io.legado.app.utils.viewbindingdelegate.viewBinding
 
 
 class ImportBookSourceActivity :
@@ -17,12 +18,8 @@ class ImportBookSourceActivity :
         theme = Theme.Transparent
     ) {
 
-    override fun getViewBinding(): ActivityTranslucenceBinding {
-        return ActivityTranslucenceBinding.inflate(layoutInflater)
-    }
-
-    override val viewModel: ImportBookSourceViewModel
-            by viewModels()
+    override val binding by viewBinding(ActivityTranslucenceBinding::inflate)
+    override val viewModel by viewModels<ImportBookSourceViewModel>()
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         binding.rotateLoading.show()

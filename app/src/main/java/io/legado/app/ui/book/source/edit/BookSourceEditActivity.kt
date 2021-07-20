@@ -12,6 +12,7 @@ import android.widget.PopupWindow
 import androidx.activity.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.tabs.TabLayout
+import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 import io.legado.app.R
 import io.legado.app.base.VMBaseActivity
 import io.legado.app.constant.AppConst
@@ -26,18 +27,20 @@ import io.legado.app.lib.theme.backgroundColor
 import io.legado.app.ui.book.source.debug.BookSourceDebugActivity
 import io.legado.app.ui.document.FilePicker
 import io.legado.app.ui.document.FilePickerParam
-import io.legado.app.ui.login.SourceLogin
+import io.legado.app.ui.login.SourceLoginActivity
 import io.legado.app.ui.qrcode.QrCodeResult
 import io.legado.app.ui.widget.KeyboardToolPop
 import io.legado.app.ui.widget.dialog.TextDialog
 import io.legado.app.utils.*
+import io.legado.app.utils.viewbindingdelegate.viewBinding
 import kotlin.math.abs
 
 class BookSourceEditActivity :
     VMBaseActivity<ActivityBookSourceEditBinding, BookSourceEditViewModel>(false),
     KeyboardToolPop.CallBack {
-    override val viewModel: BookSourceEditViewModel
-            by viewModels()
+
+    override val binding by viewBinding(ActivityBookSourceEditBinding::inflate)
+    override val viewModel by viewModels<BookSourceEditViewModel>()
 
     private val adapter = BookSourceEditAdapter()
     private val sourceEntities: ArrayList<EditEntity> = ArrayList()
@@ -63,10 +66,6 @@ class BookSourceEditActivity :
 
     private var mSoftKeyboardTool: PopupWindow? = null
     private var mIsSoftKeyBoardShowing = false
-
-    override fun getViewBinding(): ActivityBookSourceEditBinding {
-        return ActivityBookSourceEditBinding.inflate(layoutInflater)
-    }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         initView()
@@ -112,7 +111,8 @@ class BookSourceEditActivity :
             R.id.menu_share_str -> share(GSON.toJson(getSource()))
             R.id.menu_share_qr -> shareWithQr(
                 GSON.toJson(getSource()),
-                getString(R.string.share_book_source)
+                getString(R.string.share_book_source),
+                ErrorCorrectionLevel.L
             )
             R.id.menu_help -> showRuleHelp()
             R.id.menu_login -> getSource().let {
@@ -120,7 +120,7 @@ class BookSourceEditActivity :
                     if (it.loginUrl.isNullOrEmpty()) {
                         toastOnUi(R.string.source_no_login)
                     } else {
-                        startActivity<SourceLogin> {
+                        startActivity<SourceLoginActivity> {
                             putExtra("sourceUrl", it.bookSourceUrl)
                             putExtra("loginUrl", it.loginUrl)
                             putExtra("userAgent", it.getHeaderMap()[AppConst.UA_NAME])

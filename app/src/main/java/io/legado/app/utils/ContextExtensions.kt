@@ -21,8 +21,9 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.content.edit
 import androidx.preference.PreferenceManager
-import io.legado.app.BuildConfig
+import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 import io.legado.app.R
+import io.legado.app.constant.AppConst
 import java.io.File
 import java.io.FileOutputStream
 
@@ -146,8 +147,12 @@ fun Context.share(text: String, title: String = getString(R.string.share)) {
 }
 
 @SuppressLint("SetWorldReadable")
-fun Context.shareWithQr(text: String, title: String = getString(R.string.share)) {
-    val bitmap = QRCodeUtils.createQRCode(text)
+fun Context.shareWithQr(
+    text: String,
+    title: String = getString(R.string.share),
+    errorCorrectionLevel: ErrorCorrectionLevel = ErrorCorrectionLevel.H
+) {
+    val bitmap = QRCodeUtils.createQRCode(text, errorCorrectionLevel = errorCorrectionLevel)
     if (bitmap == null) {
         toastOnUi(R.string.text_too_long_qr_error)
     } else {
@@ -158,11 +163,7 @@ fun Context.shareWithQr(text: String, title: String = getString(R.string.share))
             fOut.flush()
             fOut.close()
             file.setReadable(true, false)
-            val contentUri = FileProvider.getUriForFile(
-                this,
-                "${BuildConfig.APPLICATION_ID}.fileProvider",
-                file
-            )
+            val contentUri = FileProvider.getUriForFile(this, AppConst.authority, file)
             val intent = Intent(Intent.ACTION_SEND)
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             intent.putExtra(Intent.EXTRA_STREAM, contentUri)
@@ -223,10 +224,10 @@ val Context.sysBattery: Int
         return batteryStatus?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
     }
 
-val Context.externalFilesDir: File
+val Context.externalFiles: File
     get() = this.getExternalFilesDir(null) ?: this.filesDir
 
-val Context.eCacheDir: File
+val Context.externalCache: File
     get() = this.externalCacheDir ?: this.cacheDir
 
 fun Context.openUrl(url: String) {

@@ -8,6 +8,7 @@ import io.legado.app.base.BaseViewModel
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.BookSource
 import io.legado.app.help.AppConfig
+import io.legado.app.help.ContentProcessor
 import io.legado.app.help.SourceHelp
 import io.legado.app.help.http.newCall
 import io.legado.app.help.http.okHttpClient
@@ -53,9 +54,6 @@ class ImportBookSourceViewModel(app: Application) : BaseViewModel(app) {
             selectStatus.forEachIndexed { index, b ->
                 if (b) {
                     val source = allSources[index]
-                    if (groupName != null) {
-                        source.bookSourceGroup = groupName
-                    }
                     if (keepName) {
                         checkSources[index]?.let {
                             source.bookSourceName = it.bookSourceName
@@ -63,10 +61,14 @@ class ImportBookSourceViewModel(app: Application) : BaseViewModel(app) {
                             source.customOrder = it.customOrder
                         }
                     }
+                    if (groupName != null) {
+                        source.bookSourceGroup = groupName
+                    }
                     selectSource.add(source)
                 }
             }
             SourceHelp.insertBookSource(*selectSource.toTypedArray())
+            ContentProcessor.upReplaceRules()
         }.onFinally {
             finally.invoke()
         }

@@ -120,11 +120,11 @@ object Debug {
                 infoDebug(scope, webBook, book)
             }
             key.contains("::") -> {
-                val url = key.substring(key.indexOf("::") + 2)
+                val url = key.substringAfter("::")
                 log(webBook.sourceUrl, "⇒开始访问发现页:$url")
                 exploreDebug(scope, webBook, url)
             }
-            key.startsWith("++")-> {
+            key.startsWith("++") -> {
                 val url = key.substring(2)
                 val book = Book()
                 book.origin = webBook.sourceUrl
@@ -132,7 +132,7 @@ object Debug {
                 log(webBook.sourceUrl, "⇒开始访目录页:$url")
                 tocDebug(scope, webBook, book)
             }
-            key.startsWith("--")-> {
+            key.startsWith("--") -> {
                 val url = key.substring(2)
                 val book = Book()
                 book.origin = webBook.sourceUrl
@@ -187,7 +187,7 @@ object Debug {
 
     private fun infoDebug(scope: CoroutineScope, webBook: WebBook, book: Book) {
         if (book.tocUrl.isNotBlank()) {
-            log(debugSource, "目录url不为空,详情页已解析")
+            log(debugSource, "≡已获取目录链接,跳过详情页")
             log(debugSource, showTime = false)
             tocDebug(scope, webBook, book)
             return

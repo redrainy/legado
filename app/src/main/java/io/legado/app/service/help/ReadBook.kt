@@ -16,10 +16,8 @@ import io.legado.app.ui.book.read.page.provider.ChapterProvider
 import io.legado.app.ui.book.read.page.provider.ImageProvider
 import io.legado.app.utils.msg
 import io.legado.app.utils.toastOnUi
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import splitties.init.appCtx
 import kotlin.math.max
 import kotlin.math.min
@@ -48,7 +46,7 @@ object ReadBook {
 
     fun resetData(book: Book) {
         this.book = book
-        contentProcessor = ContentProcessor(book.name, book.origin)
+        contentProcessor = ContentProcessor.get(book.name, book.origin)
         readRecord.bookName = book.name
         readRecord.readTime = appDb.readRecordDao.getReadTime(book.name) ?: 0
         durChapterIndex = book.durChapterIndex
@@ -139,7 +137,7 @@ object ReadBook {
                     callBack?.upContent()
                 }
                 loadContent(durChapterIndex.plus(1), upContent, false)
-                GlobalScope.launch(Dispatchers.IO) {
+                Coroutine.async {
                     val maxChapterIndex =
                         min(chapterSize - 1, durChapterIndex + AppConfig.preDownloadNum)
                     for (i in durChapterIndex.plus(2)..maxChapterIndex) {
@@ -157,7 +155,10 @@ object ReadBook {
         }
     }
 
-    fun moveToPrevChapter(upContent: Boolean, toLast: Boolean = true): Boolean {
+    fun moveToPrevChapter(
+        upContent: Boolean,
+        toLast: Boolean = true
+    ): Boolean {
         if (durChapterIndex > 0) {
             durChapterPos = if (toLast) prevTextChapter?.lastReadLength ?: 0 else 0
             durChapterIndex--
@@ -171,7 +172,7 @@ object ReadBook {
                     callBack?.upContent()
                 }
                 loadContent(durChapterIndex.minus(1), upContent, false)
-                GlobalScope.launch(Dispatchers.IO) {
+                Coroutine.async {
                     val minChapterIndex = max(0, durChapterIndex - 5)
                     for (i in durChapterIndex.minus(2) downTo minChapterIndex) {
                         delay(1000)
@@ -270,7 +271,7 @@ object ReadBook {
                                 success?.invoke()
                             }
                             removeLoading(chapter.index)
-                        } ?: download(chapter, resetPageOffset = resetPageOffset)
+                        } ?: download(this, chapter, resetPageOffset = resetPageOffset)
                     } ?: removeLoading(index)
                 }.onError {
                     removeLoading(index)
@@ -288,7 +289,7 @@ object ReadBook {
                         if (BookHelp.hasContent(book, chapter)) {
                             removeLoading(chapter.index)
                         } else {
-                            download(chapter, false)
+                            download(this, chapter, false)
                         }
                     } ?: removeLoading(index)
                 }.onError {
@@ -299,6 +300,7 @@ object ReadBook {
     }
 
     private fun download(
+        scope: CoroutineScope,
         chapter: BookChapter,
         resetPageOffset: Boolean,
         success: (() -> Unit)? = null
@@ -306,7 +308,7 @@ object ReadBook {
         val book = book
         val webBook = webBook
         if (book != null && webBook != null) {
-            CacheBook.download(Coroutine.DEFAULT, webBook, book, chapter)
+            CacheBook.download(scope, webBook, book, chapter)
         } else if (book != null) {
             contentLoadFinish(
                 book, chapter, "没有书源", resetPageOffset = resetPageOffset
@@ -413,30 +415,23 @@ object ReadBook {
                     else -> chapter.title
                 }
                 val contents = contentProcessor!!.getContent(book, chapter.title, content)
-                when (chapter.index) {
-                    durChapterIndex -> {
-                        curTextChapter =
-                            ChapterProvider.getTextChapter(
-                                book, chapter, contents, chapterSize
-                            )
-                        if (upContent) callBack?.upContent(resetPageOffset = resetPageOffset)
+                val textChapter =
+                    ChapterProvider.getTextChapter(book, chapter, contents, chapterSize)
+
+                val offset = chapter.index - durChapterIndex
+                if (upContent) callBack?.upContent(offset, resetPageOffset)
+                when (offset) {
+                    0 -> {
+                        curTextChapter = textChapter
                         callBack?.upView()
                         curPageChanged()
                         callBack?.contentLoadFinish()
                     }
-                    durChapterIndex - 1 -> {
-                        prevTextChapter =
-                            ChapterProvider.getTextChapter(
-                                book, chapter, contents, chapterSize
-                            )
-                        if (upContent) callBack?.upContent(-1, resetPageOffset)
+                    -1 -> {
+                        prevTextChapter = textChapter
                     }
-                    durChapterIndex + 1 -> {
-                        nextTextChapter =
-                            ChapterProvider.getTextChapter(
-                                book, chapter, contents, chapterSize
-                            )
-                        if (upContent) callBack?.upContent(1, resetPageOffset)
+                    1 -> {
+                        nextTextChapter = textChapter
                     }
                 }
             }

@@ -28,10 +28,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.math.min
 
-class ChapterListFragment : VMBaseFragment<ChapterListViewModel>(R.layout.fragment_chapter_list),
+class ChapterListFragment : VMBaseFragment<TocViewModel>(R.layout.fragment_chapter_list),
     ChapterListAdapter.Callback,
-    ChapterListViewModel.ChapterListCallBack {
-    override val viewModel: ChapterListViewModel by activityViewModels()
+    TocViewModel.ChapterListCallBack {
+    override val viewModel by activityViewModels<TocViewModel>()
     private val binding by viewBinding(FragmentChapterListBinding::bind)
     lateinit var adapter: ChapterListAdapter
     private var durChapterIndex = 0
@@ -39,7 +39,7 @@ class ChapterListFragment : VMBaseFragment<ChapterListViewModel>(R.layout.fragme
     private var tocLiveData: LiveData<List<BookChapter>>? = null
     private var scrollToDurChapter = false
 
-    override fun onFragmentCreated(view: View, savedInstanceState: Bundle?) = with(binding) {
+    override fun onFragmentCreated(view: View, savedInstanceState: Bundle?) = binding.run {
         viewModel.chapterCallBack = this@ChapterListFragment
         val bbg = bottomBackground
         val btc = requireContext().getPrimaryTextColor(ColorUtils.isColorLight(bbg))
@@ -62,7 +62,7 @@ class ChapterListFragment : VMBaseFragment<ChapterListViewModel>(R.layout.fragme
         binding.recyclerView.adapter = adapter
     }
 
-    private fun initView() = with(binding) {
+    private fun initView() = binding.run {
         ivChapterTop.setOnClickListener { mLayoutManager.scrollToPositionWithOffset(0, 0) }
         ivChapterBottom.setOnClickListener {
             if (adapter.itemCount > 0) {
@@ -77,7 +77,7 @@ class ChapterListFragment : VMBaseFragment<ChapterListViewModel>(R.layout.fragme
     @SuppressLint("SetTextI18n")
     private fun initBook(book: Book) {
         launch {
-            initDoc()
+            initToc()
             durChapterIndex = book.durChapterIndex
             binding.tvCurrentChapterInfo.text =
                 "${book.durChapterTitle}(${book.durChapterIndex + 1}/${book.totalChapterNum})"
@@ -85,7 +85,7 @@ class ChapterListFragment : VMBaseFragment<ChapterListViewModel>(R.layout.fragme
         }
     }
 
-    private fun initDoc() {
+    private fun initToc() {
         tocLiveData?.removeObservers(this@ChapterListFragment)
         tocLiveData = appDb.bookChapterDao.observeByBook(viewModel.bookUrl)
         tocLiveData?.observe(viewLifecycleOwner, {
@@ -119,7 +119,7 @@ class ChapterListFragment : VMBaseFragment<ChapterListViewModel>(R.layout.fragme
 
     override fun startChapterListSearch(newText: String?) {
         if (newText.isNullOrBlank()) {
-            initDoc()
+            initToc()
         } else {
             tocLiveData?.removeObservers(this)
             tocLiveData = appDb.bookChapterDao.liveDataSearch(viewModel.bookUrl, newText)
@@ -137,8 +137,10 @@ class ChapterListFragment : VMBaseFragment<ChapterListViewModel>(R.layout.fragme
     }
 
     override fun openChapter(bookChapter: BookChapter) {
-        activity?.setResult(RESULT_OK, Intent().putExtra("index", bookChapter.index))
-        activity?.finish()
+        activity?.run {
+            setResult(RESULT_OK, Intent().putExtra("index", bookChapter.index))
+            finish()
+        }
     }
 
 }

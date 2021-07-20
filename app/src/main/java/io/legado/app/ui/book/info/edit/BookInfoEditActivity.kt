@@ -16,6 +16,7 @@ import io.legado.app.lib.permission.Permissions
 import io.legado.app.lib.permission.PermissionsCompat
 import io.legado.app.ui.book.changecover.ChangeCoverDialog
 import io.legado.app.utils.*
+import io.legado.app.utils.viewbindingdelegate.viewBinding
 import java.io.File
 
 class BookInfoEditActivity :
@@ -29,12 +30,8 @@ class BookInfoEditActivity :
             }
         }
 
-    override val viewModel: BookInfoEditViewModel
-            by viewModels()
-
-    override fun getViewBinding(): ActivityBookInfoEditBinding {
-        return ActivityBookInfoEditBinding.inflate(layoutInflater)
-    }
+    override val binding by viewBinding(ActivityBookInfoEditBinding::inflate)
+    override val viewModel by viewModels<BookInfoEditViewModel>()
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         viewModel.bookData.observe(this, { upView(it) })
@@ -58,7 +55,7 @@ class BookInfoEditActivity :
         return super.onCompatOptionsItemSelected(item)
     }
 
-    private fun initEvent() = with(binding) {
+    private fun initEvent() = binding.run {
         tvChangeCover.setOnClickListener {
             viewModel.bookData.value?.let {
                 ChangeCoverDialog.show(supportFragmentManager, it.name, it.author)
@@ -73,7 +70,7 @@ class BookInfoEditActivity :
         }
     }
 
-    private fun upView(book: Book) = with(binding) {
+    private fun upView(book: Book) = binding.run {
         tieBookName.setText(book.name)
         tieBookAuthor.setText(book.author)
         tieCoverUrl.setText(book.getDisplayCover())
@@ -87,7 +84,7 @@ class BookInfoEditActivity :
         }
     }
 
-    private fun saveData() = with(binding) {
+    private fun saveData() = binding.run {
         viewModel.book?.let { book ->
             book.name = tieBookName.text?.toString() ?: ""
             book.author = tieBookAuthor.text?.toString() ?: ""
@@ -111,7 +108,7 @@ class BookInfoEditActivity :
         if (uri.isContentScheme()) {
             val doc = DocumentFile.fromSingleUri(this, uri)
             doc?.name?.let {
-                var file = this.externalFilesDir
+                var file = this.externalFiles
                 file = FileUtils.createFileIfNotExist(file, "covers", it)
                 kotlin.runCatching {
                     DocumentUtils.readBytes(this, doc.uri)
@@ -131,7 +128,7 @@ class BookInfoEditActivity :
                     RealPathUtil.getPath(this, uri)?.let { path ->
                         val imgFile = File(path)
                         if (imgFile.exists()) {
-                            var file = this.externalFilesDir
+                            var file = this.externalFiles
                             file = FileUtils.createFileIfNotExist(file, "covers", imgFile.name)
                             file.writeBytes(imgFile.readBytes())
                             coverChangeTo(file.absolutePath)

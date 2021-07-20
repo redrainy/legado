@@ -21,12 +21,12 @@ import io.legado.app.data.appDb
 import io.legado.app.data.entities.ReplaceRule
 import io.legado.app.databinding.ActivityReplaceRuleBinding
 import io.legado.app.databinding.DialogEditTextBinding
+import io.legado.app.help.ContentProcessor
 import io.legado.app.help.IntentDataHelp
 import io.legado.app.help.coroutine.Coroutine
 import io.legado.app.lib.dialogs.alert
 import io.legado.app.lib.theme.ATH
 import io.legado.app.lib.theme.primaryTextColor
-import io.legado.app.service.help.ReadBook
 import io.legado.app.ui.association.ImportReplaceRuleActivity
 import io.legado.app.ui.document.FilePicker
 import io.legado.app.ui.document.FilePickerParam
@@ -38,6 +38,7 @@ import io.legado.app.ui.widget.recycler.DragSelectTouchHelper
 import io.legado.app.ui.widget.recycler.ItemTouchCallback
 import io.legado.app.ui.widget.recycler.VerticalDivider
 import io.legado.app.utils.*
+import io.legado.app.utils.viewbindingdelegate.viewBinding
 import java.io.File
 
 /**
@@ -48,7 +49,8 @@ class ReplaceRuleActivity : VMBaseActivity<ActivityReplaceRuleBinding, ReplaceRu
     PopupMenu.OnMenuItemClickListener,
     SelectActionBar.CallBack,
     ReplaceRuleAdapter.CallBack {
-    override val viewModel: ReplaceRuleViewModel by viewModels()
+    override val binding by viewBinding(ActivityReplaceRuleBinding::inflate)
+    override val viewModel by viewModels<ReplaceRuleViewModel>()
     private val importRecordKey = "replaceRuleRecordKey"
     private lateinit var adapter: ReplaceRuleAdapter
     private lateinit var searchView: SearchView
@@ -91,10 +93,6 @@ class ReplaceRuleActivity : VMBaseActivity<ActivityReplaceRuleBinding, ReplaceRu
                 viewModel.exportSelection(adapter.getSelection(), File(it))
             }
         }
-    }
-
-    override fun getViewBinding(): ActivityReplaceRuleBinding {
-        return ActivityReplaceRuleBinding.inflate(layoutInflater)
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
@@ -296,7 +294,7 @@ class ReplaceRuleActivity : VMBaseActivity<ActivityReplaceRuleBinding, ReplaceRu
 
     override fun onDestroy() {
         super.onDestroy()
-        Coroutine.async { ReadBook.contentProcessor?.upReplaceRules() }
+        Coroutine.async { ContentProcessor.upReplaceRules() }
     }
 
     override fun upCountView() {

@@ -133,7 +133,7 @@ class OtherConfigFragment : BasePreferenceFragment(),
             PreferKey.processText -> sharedPreferences?.let {
                 setProcessTextEnable(it.getBoolean(key, true))
             }
-            PreferKey.showRss -> postEvent(EventBus.SHOW_RSS, "")
+            PreferKey.showDiscovery, PreferKey.showRss -> postEvent(EventBus.NOTIFY_MAIN, true)
             PreferKey.defaultCover -> upPreferenceSummary(
                 key, getPrefString(PreferKey.defaultCover)
             )
@@ -157,6 +157,11 @@ class OtherConfigFragment : BasePreferenceFragment(),
                 getString(R.string.pre_download_s, value)
             PreferKey.threadCount -> preference.summary = getString(R.string.threads_num, value)
             PreferKey.webPort -> preference.summary = getString(R.string.web_port_summary, value)
+            PreferKey.defaultCover -> preference.summary = if (value.isNullOrBlank()) {
+                getString(R.string.select_image)
+            } else {
+                value
+            }
             else -> if (preference is ListPreference) {
                 val index = preference.findIndexOfValue(value)
                 // Set the summary to reflect the new value.
@@ -221,7 +226,7 @@ class OtherConfigFragment : BasePreferenceFragment(),
         if (uri.isContentScheme()) {
             val doc = DocumentFile.fromSingleUri(requireContext(), uri)
             doc?.name?.let {
-                var file = requireContext().externalFilesDir
+                var file = requireContext().externalFiles
                 file = FileUtils.createFileIfNotExist(file, "covers", it)
                 kotlin.runCatching {
                     DocumentUtils.readBytes(requireContext(), doc.uri)
@@ -242,7 +247,7 @@ class OtherConfigFragment : BasePreferenceFragment(),
                     RealPathUtil.getPath(requireContext(), uri)?.let { path ->
                         val imgFile = File(path)
                         if (imgFile.exists()) {
-                            var file = requireContext().externalFilesDir
+                            var file = requireContext().externalFiles
                             file = FileUtils.createFileIfNotExist(file, "covers", imgFile.name)
                             file.writeBytes(imgFile.readBytes())
                             putPrefString(PreferKey.defaultCover, file.absolutePath)
